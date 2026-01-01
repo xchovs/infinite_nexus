@@ -206,7 +206,8 @@
 /* Comms Button (Paper Crane) */
 .nexus-comms-btn {
     position: absolute;
-    left: -50px; /* Adjusted size/position */
+    left: -50px;
+    /* Adjusted size/position */
     top: 50px;
     width: 48px;
     height: 48px;
@@ -216,12 +217,13 @@
     background-size: contain;
     z-index: 2001;
     opacity: 0.9;
-    filter: contrast(1.2); /* Slight pop */
+    filter: sepia(0.2) contrast(1.1);
+    /* Enhance ink wash look */
 }
 
 .nexus-comms-btn:hover {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(-5deg);
 }
 
 /* Comms Modal */
