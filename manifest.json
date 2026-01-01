@@ -2,7 +2,9 @@
     "display_name": "Infinite Nexus (无限终端)",
     "description": "Adds an Infinite Flow TRPG overlay (HP, SAN, Dice) and command parser for AI RPGs.",
     "author": "Antigravity",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "loading_order": 100,
+    "js": "index.js",
+    "css": "style.css",
     "requires": []
 }
