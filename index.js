@@ -1,6 +1,6 @@
 import { extension_settings } from "../../../extensions.js";
 
-// V3.1 - Infinite Nexus (Comms & Draggable)
+// V3.3 - Infinite Nexus (Fixes)
 const extensionName = "infinite_nexus";
 const extensionPath = `scripts/extensions/${extensionName}/`;
 
@@ -24,8 +24,7 @@ let nexusState = {
         { name: "洗髓丹", cost: 2000, effect: "[HP +50] [SKILL: 怪力 60] [SAN -10]", desc: "肉体强化，副作用较小" },
         { name: "免死金牌", cost: 5000, effect: "[MISSION: 任务完成]", desc: "直接跳过当前副本" }
     ],
-    isMinimized: false,
-    commsHistory: [] // Chat log
+    isMinimized: false
 };
 
 function createOverlay() {
@@ -35,7 +34,7 @@ function createOverlay() {
     overlay.id = 'infinite-nexus-overlay';
 
     overlay.innerHTML = `
-        <!-- Paper Crane Comms Button (Outside Main Flow) -->
+        <!-- Comms Button -->
         <div class="nexus-comms-btn" id="nexus-comms-open" title="队友传音"></div>
 
         <div class="nexus-header" id="nexus-header-bar">
@@ -119,7 +118,7 @@ function createOverlay() {
     commsModal.id = 'nexus-comms-modal';
     commsModal.innerHTML = `
         <h3 style="border-bottom:1px dashed #ccc; margin-bottom:10px; padding-bottom:5px; font-size:1em;">
-            纸鹤传音 (Teammate Comms)
+            纸鹤传音
             <span style="float:right; cursor:pointer;" id="nexus-comms-close">✕</span>
         </h3>
         <div id="nexus-comms-log" class="nexus-comms-log"></div>
@@ -127,16 +126,13 @@ function createOverlay() {
     `;
     document.body.appendChild(commsModal);
 
-    // --- Bindings ---
+    // Bindings
     document.getElementById('nexus-min-btn').addEventListener('click', toggleMinimize);
-    // Expand on seal click logic is handled in drag setup now to distinguish drag vs click
-
     document.getElementById('nexus-add-skill-btn').addEventListener('click', manualAddSkill);
     document.getElementById('nexus-universal-dice').addEventListener('click', () => performSkillCheck("运气", 50, true));
     document.getElementById('nexus-shop-open').addEventListener('click', () => { renderShopItems(); shopModal.style.display = 'block'; });
     document.getElementById('nexus-shop-close-x').addEventListener('click', () => { shopModal.style.display = 'none'; });
 
-    // Comms Bindings
     document.getElementById('nexus-comms-open').addEventListener('click', () => {
         commsModal.style.display = 'block';
         document.getElementById('nexus-comms-input').focus();
@@ -151,22 +147,17 @@ function createOverlay() {
     renderSkills();
     renderInventory();
 
-    if (window.innerWidth < 600) {
-        toggleMinimize();
-    }
+    if (window.innerWidth < 600) toggleMinimize();
 }
 
-// --- Draggable Logic (Desktop & Mobile) ---
+// --- Draggable Logic ---
 function makeDraggable(element, handle) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-    // Fallback: if minimized on mobile, the WHOLE element is the handle (The Seal)
-    // We handle this dynamically in startDrag
 
     handle.onmousedown = dragMouseDown;
     handle.ontouchstart = dragTouchStart;
 
-    // Also bind to element itself for when handle is hidden (Mobile Seal Mode)
+    // Bind to element itself for drag when handle is hidden (Mobile Seal)
     element.addEventListener('mousedown', (e) => {
         if (nexusState.isMinimized && window.innerWidth < 600) dragMouseDown(e);
     });
@@ -180,15 +171,16 @@ function makeDraggable(element, handle) {
         pos4 = e.clientY;
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
+        element.style.right = "auto"; // Unlock right align
     }
 
     function dragTouchStart(e) {
-        // e.preventDefault(); // Don't prevent default immediately or clicks fail
         const touch = e.touches[0];
         pos3 = touch.clientX;
         pos4 = touch.clientY;
         document.ontouchend = closeDragElement;
         document.ontouchmove = elementTouchDrag;
+        element.style.right = "auto";
     }
 
     function elementDrag(e) {
@@ -199,11 +191,9 @@ function makeDraggable(element, handle) {
         pos4 = e.clientY;
         element.style.top = (element.offsetTop - pos2) + "px";
         element.style.left = (element.offsetLeft - pos1) + "px";
-        element.style.right = "auto"; // Clear right alignment once moved
     }
 
     function elementTouchDrag(e) {
-        // e.preventDefault();
         const touch = e.touches[0];
         pos1 = pos3 - touch.clientX;
         pos2 = pos4 - touch.clientY;
@@ -211,19 +201,13 @@ function makeDraggable(element, handle) {
         pos4 = touch.clientY;
         element.style.top = (element.offsetTop - pos2) + "px";
         element.style.left = (element.offsetLeft - pos1) + "px";
-        element.style.right = "auto";
     }
 
-    function closeDragElement(e) {
+    function closeDragElement() {
         document.onmouseup = null;
         document.onmousemove = null;
         document.ontouchend = null;
         document.ontouchmove = null;
-
-        // Simple click detection for seal expansion
-        // (If moved less than 5px, count as click)
-        // Ignoring for now, relying on separate button or clean click.
-        // If user drags, it moves. If user clicks static, it bubbles to click handler.
     }
 }
 
@@ -241,13 +225,11 @@ function toggleMinimize() {
     }
 }
 
-// --- Comms Logic ---
 function sendCommsMessage() {
     const input = document.getElementById('nexus-comms-input');
     const msg = input.value.trim();
     if (!msg) return;
 
-    // 1. Log to UI
     const log = document.getElementById('nexus-comms-log');
     const entry = document.createElement('div');
     entry.innerHTML = `<span class="nexus-msg-user">你:</span> ${msg}`;
@@ -256,21 +238,15 @@ function sendCommsMessage() {
 
     input.value = "";
 
-    // 2. Inject to Chat Context (Hidden or visible)
-    // We will append to send_textarea as a bracketed system note
     const textarea = document.querySelector('#send_textarea');
     if (textarea) {
         const prefix = textarea.value ? "\n" : "";
-        // Format: [队友传音: "xxxx"]
-        // This tells the AI that the character sent a message.
         textarea.value += prefix + `[传音: "${msg}"]`;
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-        toastr.success("传音已就绪 (随下条消息发送)");
+        toastr.success("传音已就绪");
     }
 }
 
-// [Render Functions Same as V3.0]
 function renderSkills() {
     const list = document.getElementById('nexus-skill-list');
     if (!list) return;
@@ -503,5 +479,5 @@ jQuery(document).ready(function () {
     link.rel = 'stylesheet';
     document.head.append(link);
     setTimeout(createOverlay, 1000);
-    console.log("[Infinite Nexus] Chinese Minimalist (V3.1 Comms) Loaded");
+    console.log("[Infinite Nexus] Chinese Minimalist (V3.3 Final) Loaded");
 });

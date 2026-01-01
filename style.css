@@ -27,7 +27,13 @@
     font-family: var(--nexus-font);
     display: flex;
     flex-direction: column;
-    transition: all 0.3s ease;
+    /* IMPORTANT: No transition here to prevent drag lag */
+    /* transition: all 0.3s ease; <--- REMOVED */
+
+    /* Allow Paper Crane to hang outside */
+    overflow: visible;
+    /* Max height constraint for the whole panel */
+    max-height: 90vh;
 }
 
 /* Header & Mission */
@@ -41,6 +47,9 @@
     font-weight: bold;
     letter-spacing: 2px;
     font-size: 1.1em;
+    cursor: move;
+    /* Indicate draggable */
+    flex-shrink: 0;
 }
 
 .nexus-mission-box {
@@ -51,11 +60,17 @@
     font-weight: bold;
     color: var(--nexus-accent-red);
     background: rgba(178, 44, 44, 0.05);
+    flex-shrink: 0;
 }
 
 /* Stats */
 .nexus-content {
     padding: 10px 15px;
+    overflow-y: auto;
+    /* Scrollable */
+    flex-grow: 1;
+    min-height: 0;
+    /* Flexbox scroll fix */
 }
 
 .nexus-stat-row {
@@ -106,8 +121,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    max-height: 150px;
-    overflow-y: auto;
+    /* max-height removed, relying on parent scroll */
 }
 
 .nexus-skill-btn {
@@ -150,6 +164,7 @@
     border: none;
     font-weight: bold;
     transition: background 0.2s;
+    flex-shrink: 0;
 }
 
 .nexus-shop-btn:hover {
@@ -188,6 +203,69 @@
     cursor: pointer;
 }
 
+/* Comms Button (Paper Crane) */
+.nexus-comms-btn {
+    position: absolute;
+    left: -40px;
+    /* Outside on the left */
+    top: 50px;
+    width: 32px;
+    /* Ensure size */
+    height: 32px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b22c2c'%3E%3Cpath d='M21 5c-1.1 0-3.59.86-5.46 2.34l-1.38-1.74c-.58-.72-1.76-.72-2.34 0l-7.79 9.8c-.37.47.07 1.15.65 1.01l7.65-1.91 3.25 4.34c.54.72 1.58.58 1.95-.25l3.47-7.73c.33-.74 1.33-4.32 0-5.86zM6 16l8-2-4-5-4 7z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    z-index: 2001;
+    opacity: 0.9;
+}
+
+.nexus-comms-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Comms Modal */
+#nexus-comms-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 3001;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-comms-log {
+    height: 150px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin-bottom: 10px;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 0.85em;
+    color: #444;
+}
+
+.nexus-comms-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--nexus-border);
+    background: #fff;
+    font-family: var(--nexus-font);
+    box-sizing: border-box;
+}
+
+.nexus-msg-user {
+    color: var(--nexus-accent-blue);
+    font-weight: bold;
+}
+
 /* Glitch */
 .glitch-effect {
     border: 2px solid red !important;
@@ -208,28 +286,23 @@
     }
 }
 
-/* --- Global Minimized State (Desktop & Mobile) --- */
-
-/* 1. Hide the body content when minimized */
+/* --- Global Minimized State --- */
 #infinite-nexus-overlay.minimized .nexus-content,
 #infinite-nexus-overlay.minimized .nexus-mission-box,
-#infinite-nexus-overlay.minimized .nexus-shop-btn {
-    display: none;
+#infinite-nexus-overlay.minimized .nexus-shop-btn,
+#infinite-nexus-overlay.minimized .nexus-comms-btn {
+    display: none !important;
 }
 
-/* 2. Desktop Minimized Style: Just the Header Bar */
 #infinite-nexus-overlay.minimized {
-    /* Height is determined by content (header only) */
     width: 300px;
-    /* Keep width */
     height: auto;
     overflow: hidden;
     background: var(--nexus-border);
-    /* Dark background for header only look */
     border-color: var(--nexus-border);
 }
 
-/* --- Mobile Specifics --- */
+/* --- Mobile Responsiveness --- */
 @media (max-width: 600px) {
     #infinite-nexus-overlay {
         top: 20px;
@@ -239,7 +312,6 @@
         overflow-y: auto;
     }
 
-    /* 3. Mobile Minimized Style: THE SEAL (Override Desktop) */
     #infinite-nexus-overlay.minimized {
         width: 50px;
         height: 50px;
@@ -247,24 +319,19 @@
         background: var(--nexus-accent-red);
         border: 2px solid #fff;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         position: fixed;
         right: 20px;
         top: 80px;
-        /* Lower it a bit on mobile */
         padding: 0;
     }
 
-    /* Hide the header on mobile because we show the Seal text */
     #infinite-nexus-overlay.minimized .nexus-header {
         display: none;
     }
 
-    /* Seal Text */
     #infinite-nexus-overlay.minimized::after {
         content: "无限";
         color: #fff;
