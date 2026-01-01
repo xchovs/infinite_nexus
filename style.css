@@ -206,18 +206,17 @@
 /* Comms Button (Paper Crane) */
 .nexus-comms-btn {
     position: absolute;
-    left: -40px;
-    /* Outside on the left */
+    left: -50px; /* Adjusted size/position */
     top: 50px;
-    width: 32px;
-    /* Ensure size */
-    height: 32px;
+    width: 48px;
+    height: 48px;
     cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b22c2c'%3E%3Cpath d='M21 5c-1.1 0-3.59.86-5.46 2.34l-1.38-1.74c-.58-.72-1.76-.72-2.34 0l-7.79 9.8c-.37.47.07 1.15.65 1.01l7.65-1.91 3.25 4.34c.54.72 1.58.58 1.95-.25l3.47-7.73c.33-.74 1.33-4.32 0-5.86zM6 16l8-2-4-5-4 7z'/%3E%3C/svg%3E");
+    background-image: url("paper_crane.png");
     background-repeat: no-repeat;
     background-size: contain;
     z-index: 2001;
     opacity: 0.9;
+    filter: contrast(1.2); /* Slight pop */
 }
 
 .nexus-comms-btn:hover {
