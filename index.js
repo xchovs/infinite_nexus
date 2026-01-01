@@ -9,6 +9,7 @@ let nexusState = {
     hp: 100, maxHp: 100,
     san: 100, maxSan: 100,
     karma: 0,
+    time: "D-01",
     mission: "存活并寻找线索...",
     skills: [
         { name: "侦查", value: 50 },
@@ -41,7 +42,7 @@ function createOverlay() {
         <div class="nexus-header" id="nexus-header-bar">
             <span>无限终端</span>
             <div style="display:flex; gap:10px; align-items:center;">
-                <span id="nexus-clock" style="font-weight:normal; font-size:0.8em;">D-01</span>
+                <span id="nexus-clock" style="font-weight:normal; font-size:0.8em;">${nexusState.time}</span>
                 <!-- No text button anymore, visual feedback via CSS is enough -->
             </div>
         </div>
@@ -459,6 +460,14 @@ function parseSystemTags(text) {
             const skillMatch = /([\u4e00-\u9fa5\w]+)\s*[:：]?\s*(\d+)/.exec(content.replace(/(SKILL|技能|获得)/ig, ""));
             if (skillMatch) {
                 addOrUpdateSkill(skillMatch[1], parseInt(skillMatch[2]));
+            }
+        }
+
+        if (/(TIME|时间|日期|天数)/i.test(content)) {
+            let clean = content.replace(/(TIME|时间|日期|天数)/ig, "").replace(/^[:：\s]+/, "").trim();
+            if (clean) {
+                nexusState.time = clean;
+                updated = true;
             }
         }
 
