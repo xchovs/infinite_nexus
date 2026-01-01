@@ -1,6 +1,6 @@
 import { extension_settings } from "../../../extensions.js";
 
-// V3.3 - Infinite Nexus (Fixes)
+// V3.4 - Infinite Nexus (Final Polish)
 const extensionName = "infinite_nexus";
 const extensionPath = `scripts/extensions/${extensionName}/`;
 
@@ -33,15 +33,16 @@ function createOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'infinite-nexus-overlay';
 
+    // HTML Structure
     overlay.innerHTML = `
-        <!-- Comms Button -->
+        <!-- Comms Button (Paper Crane) -->
         <div class="nexus-comms-btn" id="nexus-comms-open" title="队友传音"></div>
 
         <div class="nexus-header" id="nexus-header-bar">
             <span>无限终端</span>
             <div style="display:flex; gap:10px; align-items:center;">
                 <span id="nexus-clock" style="font-weight:normal; font-size:0.8em;">D-01</span>
-                <span class="nexus-minimize-btn" id="nexus-min-btn">[收]</span>
+                <!-- No text button anymore, visual feedback via CSS is enough -->
             </div>
         </div>
         
@@ -84,7 +85,7 @@ function createOverlay() {
                 <span>空间戒指</span>
             </div>
             <div id="nexus-inventory-list" class="nexus-inventory-grid">
-                <div style="color:#888; font-size:0.8em;">(空)</div>
+                <div style="color:#888; font-size:0.8em;">(空-等待拾取)</div>
             </div>
 
             <!-- Dice -->
@@ -127,7 +128,6 @@ function createOverlay() {
     document.body.appendChild(commsModal);
 
     // Bindings
-    document.getElementById('nexus-min-btn').addEventListener('click', toggleMinimize);
     document.getElementById('nexus-add-skill-btn').addEventListener('click', manualAddSkill);
     document.getElementById('nexus-universal-dice').addEventListener('click', () => performSkillCheck("运气", 50, true));
     document.getElementById('nexus-shop-open').addEventListener('click', () => { renderShopItems(); shopModal.style.display = 'block'; });
@@ -142,22 +142,25 @@ function createOverlay() {
         if (e.key === 'Enter') sendCommsMessage();
     });
 
+    // Make Draggable + Smart Toggle on Header
     makeDraggable(overlay, document.getElementById('nexus-header-bar'));
 
     renderSkills();
     renderInventory();
 
+    // Auto minimize on mobile start
     if (window.innerWidth < 600) toggleMinimize();
 }
 
-// --- Draggable Logic ---
+// --- Draggable Logic with Smart Click ---
 function makeDraggable(element, handle) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let isDragging = false;
 
     handle.onmousedown = dragMouseDown;
     handle.ontouchstart = dragTouchStart;
 
-    // Bind to element itself for drag when handle is hidden (Mobile Seal)
+    // seal mode logic (bind to element itself when minimized on mobile)
     element.addEventListener('mousedown', (e) => {
         if (nexusState.isMinimized && window.innerWidth < 600) dragMouseDown(e);
     });
@@ -166,16 +169,18 @@ function makeDraggable(element, handle) {
     }, { passive: false });
 
     function dragMouseDown(e) {
-        e.preventDefault();
+        // e.preventDefault(); // Don't prevent defaults too early, implies focus loss
+        isDragging = false; // Reset
         pos3 = e.clientX;
         pos4 = e.clientY;
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
-        element.style.right = "auto"; // Unlock right align
+        element.style.right = "auto";
     }
 
     function dragTouchStart(e) {
         const touch = e.touches[0];
+        isDragging = false;
         pos3 = touch.clientX;
         pos4 = touch.clientY;
         document.ontouchend = closeDragElement;
@@ -185,6 +190,7 @@ function makeDraggable(element, handle) {
 
     function elementDrag(e) {
         e.preventDefault();
+        isDragging = true; // Moved!
         pos1 = pos3 - e.clientX;
         pos2 = pos4 - e.clientY;
         pos3 = e.clientX;
@@ -194,6 +200,8 @@ function makeDraggable(element, handle) {
     }
 
     function elementTouchDrag(e) {
+        // e.preventDefault(); 
+        isDragging = true;
         const touch = e.touches[0];
         pos1 = pos3 - touch.clientX;
         pos2 = pos4 - touch.clientY;
@@ -208,20 +216,22 @@ function makeDraggable(element, handle) {
         document.onmousemove = null;
         document.ontouchend = null;
         document.ontouchmove = null;
+
+        // If we didn't drag, treat it as a click -> Toggle Minimize
+        if (!isDragging) {
+            toggleMinimize();
+        }
     }
 }
 
 function toggleMinimize() {
     nexusState.isMinimized = !nexusState.isMinimized;
     const overlay = document.getElementById('infinite-nexus-overlay');
-    const btn = document.getElementById('nexus-min-btn');
 
     if (nexusState.isMinimized) {
         overlay.classList.add('minimized');
-        btn.innerText = "[展]";
     } else {
         overlay.classList.remove('minimized');
-        btn.innerText = "[收]";
     }
 }
 
@@ -265,7 +275,7 @@ function renderInventory() {
     if (!list) return;
     list.innerHTML = "";
     if (nexusState.inventory.length === 0) {
-        list.innerHTML = `<div style="color:#888; font-size:0.8em; padding:5px;">(无)</div>`;
+        list.innerHTML = `<div style="color:#888; font-size:0.8em; padding:5px;">(空)</div>`;
         return;
     }
     nexusState.inventory.forEach(item => {
@@ -457,12 +467,9 @@ function parseSystemTags(text) {
             clean = clean.replace(/^[+\-:：\s]+/, "");
 
             // Stricter Filter Logic
-            // 1. Remove common noise words formatting
             clean = clean.replace(/^(获得|发现|关键线索|提示)/, "").trim();
-
-            // 2. Ignore if it looks like a system warning or too long
-            if (clean.length > 12) return; // Items shouldn't be sentences
-            if (/^(注意|警告|系统|数据)/.test(clean)) return; // System messages
+            if (clean.length > 12) return;
+            if (/^(注意|警告|系统|数据)/.test(clean)) return;
 
             if (clean) addItem(clean);
         }
@@ -488,5 +495,5 @@ jQuery(document).ready(function () {
     link.rel = 'stylesheet';
     document.head.append(link);
     setTimeout(createOverlay, 1000);
-    console.log("[Infinite Nexus] Chinese Minimalist (V3.3 Final) Loaded");
+    console.log("[Infinite Nexus] Chinese Minimalist (V3.4 Force) Loaded");
 });
