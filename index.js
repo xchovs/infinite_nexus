@@ -455,6 +455,15 @@ function parseSystemTags(text) {
         if (/(ITEM|物品|道具)/i.test(content)) {
             let clean = content.replace(/(ITEM|物品|道具)/ig, "").trim();
             clean = clean.replace(/^[+\-:：\s]+/, "");
+
+            // Stricter Filter Logic
+            // 1. Remove common noise words formatting
+            clean = clean.replace(/^(获得|发现|关键线索|提示)/, "").trim();
+
+            // 2. Ignore if it looks like a system warning or too long
+            if (clean.length > 12) return; // Items shouldn't be sentences
+            if (/^(注意|警告|系统|数据)/.test(clean)) return; // System messages
+
             if (clean) addItem(clean);
         }
     }
