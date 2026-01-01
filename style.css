@@ -214,11 +214,12 @@
     cursor: pointer;
     z-index: 2001;
     opacity: 0.9;
-    background-image: url("paper_crane.svg");
+    background-image: url("paper_crane.png?v=3.9");
     background-repeat: no-repeat;
     background-size: contain;
-    /* mix-blend-mode removed - SVG is naturally transparent */
-    filter: sepia(0.2) contrast(1.1);
+    /* Multiply blends white background into the paper, making it transparent */
+    mix-blend-mode: multiply;
+    filter: sepia(0.2) contrast(1.2);
 }
 
 .nexus-comms-btn:hover {

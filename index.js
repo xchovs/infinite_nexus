@@ -520,5 +520,5 @@ jQuery(document).ready(function () {
     link.rel = 'stylesheet';
     document.head.append(link);
     setTimeout(createOverlay, 1000);
-    console.log("[Infinite Nexus] V3.8 Loaded - Final Fix (WhiteBG+Multiply)");
+    console.log("[Infinite Nexus] V3.9 Loaded - PNG Restored");
 });
