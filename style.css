@@ -1,0 +1,125 @@
+:root {
+    --nexus-bg: rgba(10, 10, 15, 0.95);
+    --nexus-border: #444;
+    --nexus-accent-red: #ff3333;
+    --nexus-accent-blue: #00e5ff;
+    --nexus-text: #eee;
+    --nexus-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#infinite-nexus-overlay {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 280px;
+    background: var(--nexus-bg);
+    border: 1px solid var(--nexus-border);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+    color: var(--nexus-text);
+    z-index: 2000;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: var(--nexus-font);
+    backdrop-filter: blur(5px);
+    transition: opacity 0.3s;
+}
+
+.nexus-header {
+    font-size: 1.1em;
+    font-weight: bold;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--nexus-accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.nexus-stat-row {
+    margin-bottom: 12px;
+}
+
+.nexus-label {
+    font-size: 0.8em;
+    color: #aaa;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nexus-bar-container {
+    height: 10px;
+    background: #222;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.nexus-bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nexus-hp-fill {
+    background: linear-gradient(90deg, #8b0000, #ff3333);
+    box-shadow: 0 0 5px #ff3333;
+}
+
+.nexus-san-fill {
+    background: linear-gradient(90deg, #003366, #00e5ff);
+    box-shadow: 0 0 5px #00e5ff;
+}
+
+.nexus-dice-btn {
+    width: 100%;
+    padding: 8px;
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.nexus-dice-btn:hover {
+    background: #444;
+    border-color: var(--nexus-accent-blue);
+}
+
+/* Animations */
+@keyframes glitch-text {
+    0% {
+        transform: translate(0);
+    }
+
+    20% {
+        transform: translate(-2px, 2px);
+    }
+
+    40% {
+        transform: translate(-2px, -2px);
+    }
+
+    60% {
+        transform: translate(2px, 2px);
+    }
+
+    80% {
+        transform: translate(2px, -2px);
+    }
+
+    100% {
+        transform: translate(0);
+    }
+}
+
+.glitch-effect {
+    animation: glitch-text 0.3s infinite;
+    color: var(--nexus-accent-red);
+}
