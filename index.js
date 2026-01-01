@@ -489,16 +489,25 @@ function parseSystemTags(text) {
     if (updated) updateUI();
 }
 
+// Reactive Scanner
 setInterval(() => {
     const msgs = document.querySelectorAll('.mes_text');
     if (msgs.length > 0) {
-        // Scan the last 5 messages to ensure we don't miss tags if multiple messages arrive
-        const start = Math.max(0, msgs.length - 5);
+        // Scan LAST 10 messages (covers user inputs + AI replies)
+        const start = Math.max(0, msgs.length - 10);
         for (let i = start; i < msgs.length; i++) {
             const msg = msgs[i];
-            if (!msg.dataset.nexusParsed) {
-                parseSystemTags(msg.innerText);
-                msg.dataset.nexusParsed = "true";
+            const currentText = msg.innerText;
+
+            // Check if content changed since last parse
+            // We use length as a cheap proxy, or store the full string if precise
+            const lastParsedLen = parseInt(msg.dataset.nexusParsedLen || "0");
+
+            if (currentText.length !== lastParsedLen) {
+                console.log(`[Infinite Nexus] detected change in msg ${i}, parsing...`);
+                parseSystemTags(currentText);
+                // Update tracker
+                msg.dataset.nexusParsedLen = currentText.length;
             }
         }
     }

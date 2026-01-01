@@ -212,14 +212,13 @@
     width: 48px;
     height: 48px;
     cursor: pointer;
-    background-image: url("paper_crane.png?v=3.8");
-    background-repeat: no-repeat;
-    background-size: contain;
     z-index: 2001;
     opacity: 0.9;
-    /* Use multiply to make white background transparent */
-    mix-blend-mode: multiply;
-    filter: sepia(0.2) contrast(1.2);
+    background-image: url("paper_crane.svg");
+    background-repeat: no-repeat;
+    background-size: contain;
+    /* mix-blend-mode removed - SVG is naturally transparent */
+    filter: sepia(0.2) contrast(1.1);
 }
 
 .nexus-comms-btn:hover {
