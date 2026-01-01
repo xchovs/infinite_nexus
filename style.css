@@ -1,55 +1,58 @@
 :root {
-    --nexus-bg: rgba(15, 15, 20, 0.95);
-    --nexus-border: #555;
-    --nexus-accent-red: #ff4444;
-    --nexus-accent-blue: #00e5ff;
-    --nexus-accent-gold: #ffd700;
-    --nexus-text: #eee;
-    --nexus-font: "Microsoft YaHei", "SimHei", sans-serif;
-    /* Chinese Friendly Fonts */
+    --nexus-bg: #f5f2e9;
+    /* Rice Paper / 宣纸色 */
+    --nexus-border: #2c2c2c;
+    /* Ink / 墨色 */
+    --nexus-accent-red: #b22c2c;
+    /* Cinnabar / 朱砂 */
+    --nexus-accent-blue: #2c4b7c;
+    /* Indigo / 黛蓝 */
+    --nexus-text: #1a1a1a;
+    --nexus-font: "SimSun", "Songti SC", "Noto Serif SC", serif;
+    /* 宋体 */
 }
 
 #infinite-nexus-overlay {
     position: fixed;
-    top: 60px;
-    /* Lowered slightly */
+    top: 50px;
     right: 20px;
     width: 300px;
     background: var(--nexus-bg);
-    border: 1px solid var(--nexus-border);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
+    border: 2px solid var(--nexus-border);
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+    /* Hard shadow, not soft blur */
     color: var(--nexus-text);
     z-index: 2000;
     padding: 0;
-    border-radius: 4px;
+    border-radius: 0;
+    /* No rounded corners */
     font-family: var(--nexus-font);
-    backdrop-filter: blur(5px);
-    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 /* Header & Mission */
 .nexus-header {
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--nexus-border);
+    color: #fff;
     padding: 10px 15px;
-    border-bottom: 1px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: var(--nexus-accent-blue);
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    font-size: 1.1em;
 }
 
 .nexus-mission-box {
-    background: rgba(255, 68, 68, 0.1);
     border-left: 3px solid var(--nexus-accent-red);
     padding: 8px 12px;
-    margin: 10px 15px 5px 15px;
-    font-size: 0.85em;
-    color: #ffaaaa;
-    line-height: 1.4;
+    margin: 15px 15px 5px 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--nexus-accent-red);
+    background: rgba(178, 44, 44, 0.05);
 }
 
 /* Stats */
@@ -58,22 +61,21 @@
 }
 
 .nexus-stat-row {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .nexus-label {
-    font-size: 0.8em;
-    color: #aaa;
+    font-size: 0.9em;
+    color: #444;
     margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
 }
 
 .nexus-bar-container {
-    height: 8px;
-    background: #222;
-    border-radius: 2px;
-    overflow: hidden;
+    height: 10px;
+    background: #e0e0e0;
+    border: 1px solid #999;
 }
 
 .nexus-bar-fill {
@@ -83,32 +85,23 @@
 }
 
 .nexus-hp-fill {
-    background: linear-gradient(90deg, #8b0000, #ff4444);
-    box-shadow: 0 0 5px #ff0000;
+    background: var(--nexus-accent-red);
 }
 
 .nexus-san-fill {
-    background: linear-gradient(90deg, #003366, #00e5ff);
-    box-shadow: 0 0 5px #00ffff;
+    background: var(--nexus-accent-blue);
 }
 
 /* Skills Grid */
 .nexus-section-title {
-    font-size: 0.85em;
-    color: #888;
-    border-bottom: 1px solid #333;
+    font-size: 0.9em;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
     padding-bottom: 4px;
-    margin: 15px 0 8px 0;
+    margin: 20px 0 10px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    text-transform: uppercase;
-}
-
-.nexus-add-btn {
-    cursor: pointer;
-    color: var(--nexus-accent-blue);
-    font-weight: bold;
 }
 
 .nexus-skill-grid {
@@ -120,94 +113,144 @@
 }
 
 .nexus-skill-btn {
-    background: #2a2a30;
-    border: 1px solid #444;
-    color: #ccc;
-    padding: 6px;
-    font-size: 0.8em;
-    text-align: left;
+    background: #fff;
+    border: 1px solid #bbb;
+    color: #333;
+    padding: 8px;
+    font-size: 0.9em;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
-    border-radius: 3px;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .nexus-skill-btn:hover {
-    background: #3a3a40;
-    border-color: #666;
-    color: #fff;
+    border-color: var(--nexus-accent-red);
+    background: #fff5f5;
 }
 
 .nexus-skill-val {
-    color: var(--nexus-accent-gold);
+    font-weight: bold;
+}
+
+/* Mobile & Minimize */
+.nexus-minimize-btn,
+.nexus-close-btn {
+    cursor: pointer;
+    font-family: sans-serif;
+    padding: 0 5px;
 }
 
 /* Shop Button */
 .nexus-shop-btn {
     margin: 15px;
     padding: 10px;
-    background: linear-gradient(45deg, #333, #222);
-    border: 1px solid #ffd700;
-    color: #ffd700;
-    font-weight: bold;
+    background: var(--nexus-border);
+    color: #fff;
     text-align: center;
     cursor: pointer;
-    text-shadow: 0 0 2px #000;
-    transition: all 0.2s;
+    border: none;
+    font-weight: bold;
+    transition: background 0.2s;
 }
 
 .nexus-shop-btn:hover {
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    background: #444;
 }
 
 /* Shop Modal */
 #nexus-shop-modal {
     display: none;
-    /* Hidden by default */
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 400px;
-    background: #1a1a20;
-    border: 2px solid var(--nexus-accent-gold);
+    width: 90%;
+    max-width: 400px;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
     z-index: 3000;
     padding: 20px;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
 }
 
 .nexus-shop-item {
     display: flex;
     justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid #333;
+    padding: 10px 0;
+    border-bottom: 1px dashed #ccc;
     align-items: center;
 }
 
 .nexus-shop-buy {
-    background: #333;
-    color: #ffd700;
-    border: 1px solid #555;
-    padding: 4px 10px;
+    background: #fff;
+    border: 1px solid var(--nexus-border);
+    padding: 4px 8px;
     cursor: pointer;
 }
 
+/* Glitch (Ink Spill Effect) */
 .glitch-effect {
-    animation: glitch 0.3s infinite;
-    border-color: red !important;
+    border: 2px solid red !important;
+    animation: shake 0.5s infinite;
 }
 
-@keyframes glitch {
+@keyframes shake {
     0% {
-        transform: translate(0, 0);
+        transform: translate(1px, 1px) rotate(0deg);
     }
 
-    20% {
-        transform: translate(-2px, 1px);
+    10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
     }
 
     100% {
-        transform: translate(0, 0);
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+    #infinite-nexus-overlay {
+        top: 20px;
+        right: 5%;
+        /* Center-ish */
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    /* When minimized (controlled by JS class) */
+    #infinite-nexus-overlay.minimized {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--nexus-accent-red);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        /* Center content */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        right: 20px;
+        top: 20px;
+        padding: 0;
+    }
+
+    #infinite-nexus-overlay.minimized .nexus-header,
+    #infinite-nexus-overlay.minimized .nexus-content,
+    #infinite-nexus-overlay.minimized .nexus-mission-box,
+    #infinite-nexus-overlay.minimized .nexus-shop-btn {
+        display: none;
+    }
+
+    /* The 'Seal' Text */
+    #infinite-nexus-overlay.minimized::after {
+        content: "无限";
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2em;
     }
 }
