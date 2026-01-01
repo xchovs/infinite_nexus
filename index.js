@@ -1,8 +1,9 @@
 import { extension_settings } from "../../../extensions.js";
 
-// V3.4 - Infinite Nexus (Final Polish)
+// V3.7 - Infinite Nexus (Dynamic Path Fix)
 const extensionName = "infinite_nexus";
-const extensionPath = `scripts/extensions/${extensionName}/`;
+// Dynamically determine path based on where this script is loaded from
+const extensionPath = import.meta.url.substring(0, import.meta.url.lastIndexOf('/') + 1);
 
 // State
 let nexusState = {
@@ -402,6 +403,8 @@ function parseSystemTags(text) {
 
     while ((match = blockRegex.exec(text)) !== null) {
         const content = match[1];
+        console.log("[Nexus Debug] Found tag content:", content);
+
 
         if (/(HP|生命|Life|Integrity)/i.test(content)) {
             const numRegex = /([+\-－]?)\s*(\d+)/;
@@ -504,5 +507,5 @@ jQuery(document).ready(function () {
     link.rel = 'stylesheet';
     document.head.append(link);
     setTimeout(createOverlay, 1000);
-    console.log("[Infinite Nexus] Chinese Minimalist (V3.4 Force) Loaded");
+    console.log("[Infinite Nexus] V3.6 Loaded - Cache Busted (Time+Transparency)");
 });
