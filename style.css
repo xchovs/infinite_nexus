@@ -1,45 +1,64 @@
 :root {
-    --nexus-bg: rgba(10, 10, 15, 0.95);
-    --nexus-border: #444;
-    --nexus-accent-red: #ff3333;
+    --nexus-bg: rgba(15, 15, 20, 0.95);
+    --nexus-border: #555;
+    --nexus-accent-red: #ff4444;
     --nexus-accent-blue: #00e5ff;
+    --nexus-accent-gold: #ffd700;
     --nexus-text: #eee;
-    --nexus-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --nexus-font: "Microsoft YaHei", "SimHei", sans-serif;
+    /* Chinese Friendly Fonts */
 }
 
 #infinite-nexus-overlay {
     position: fixed;
-    top: 20px;
+    top: 60px;
+    /* Lowered slightly */
     right: 20px;
-    width: 280px;
+    width: 300px;
     background: var(--nexus-bg);
     border: 1px solid var(--nexus-border);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
     color: var(--nexus-text);
     z-index: 2000;
-    padding: 15px;
+    padding: 0;
     border-radius: 4px;
     font-family: var(--nexus-font);
     backdrop-filter: blur(5px);
-    transition: opacity 0.3s;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
+/* Header & Mission */
 .nexus-header {
-    font-size: 1.1em;
-    font-weight: bold;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
     border-bottom: 1px solid #333;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: var(--nexus-accent-blue);
-    text-transform: uppercase;
+    font-weight: bold;
     letter-spacing: 1px;
 }
 
+.nexus-mission-box {
+    background: rgba(255, 68, 68, 0.1);
+    border-left: 3px solid var(--nexus-accent-red);
+    padding: 8px 12px;
+    margin: 10px 15px 5px 15px;
+    font-size: 0.85em;
+    color: #ffaaaa;
+    line-height: 1.4;
+}
+
+/* Stats */
+.nexus-content {
+    padding: 10px 15px;
+}
+
 .nexus-stat-row {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .nexus-label {
@@ -51,75 +70,144 @@
 }
 
 .nexus-bar-container {
-    height: 10px;
+    height: 8px;
     background: #222;
     border-radius: 2px;
     overflow: hidden;
-    position: relative;
 }
 
 .nexus-bar-fill {
     height: 100%;
     width: 100%;
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.4s ease;
 }
 
 .nexus-hp-fill {
-    background: linear-gradient(90deg, #8b0000, #ff3333);
-    box-shadow: 0 0 5px #ff3333;
+    background: linear-gradient(90deg, #8b0000, #ff4444);
+    box-shadow: 0 0 5px #ff0000;
 }
 
 .nexus-san-fill {
     background: linear-gradient(90deg, #003366, #00e5ff);
-    box-shadow: 0 0 5px #00e5ff;
+    box-shadow: 0 0 5px #00ffff;
 }
 
-.nexus-dice-btn {
-    width: 100%;
-    padding: 8px;
-    background: #333;
-    border: 1px solid #555;
-    color: #fff;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: background 0.2s;
+/* Skills Grid */
+.nexus-section-title {
+    font-size: 0.85em;
+    color: #888;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    margin: 15px 0 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     text-transform: uppercase;
-    font-size: 0.9em;
 }
 
-.nexus-dice-btn:hover {
-    background: #444;
-    border-color: var(--nexus-accent-blue);
+.nexus-add-btn {
+    cursor: pointer;
+    color: var(--nexus-accent-blue);
+    font-weight: bold;
 }
 
-/* Animations */
-@keyframes glitch-text {
-    0% {
-        transform: translate(0);
-    }
+.nexus-skill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+}
 
-    20% {
-        transform: translate(-2px, 2px);
-    }
+.nexus-skill-btn {
+    background: #2a2a30;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 6px;
+    font-size: 0.8em;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
 
-    40% {
-        transform: translate(-2px, -2px);
-    }
+.nexus-skill-btn:hover {
+    background: #3a3a40;
+    border-color: #666;
+    color: #fff;
+}
 
-    60% {
-        transform: translate(2px, 2px);
-    }
+.nexus-skill-val {
+    color: var(--nexus-accent-gold);
+}
 
-    80% {
-        transform: translate(2px, -2px);
-    }
+/* Shop Button */
+.nexus-shop-btn {
+    margin: 15px;
+    padding: 10px;
+    background: linear-gradient(45deg, #333, #222);
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    text-shadow: 0 0 2px #000;
+    transition: all 0.2s;
+}
 
-    100% {
-        transform: translate(0);
-    }
+.nexus-shop-btn:hover {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Shop Modal */
+#nexus-shop-modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background: #1a1a20;
+    border: 2px solid var(--nexus-accent-gold);
+    z-index: 3000;
+    padding: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+.nexus-shop-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    align-items: center;
+}
+
+.nexus-shop-buy {
+    background: #333;
+    color: #ffd700;
+    border: 1px solid #555;
+    padding: 4px 10px;
+    cursor: pointer;
 }
 
 .glitch-effect {
-    animation: glitch-text 0.3s infinite;
-    color: var(--nexus-accent-red);
+    animation: glitch 0.3s infinite;
+    border-color: red !important;
+}
+
+@keyframes glitch {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    20% {
+        transform: translate(-2px, 1px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
 }

@@ -1,17 +1,25 @@
 import { extension_settings } from "../../../extensions.js";
 
+// V2.0 - Infinite Nexus (Infinite Flow TRPG Plugin)
 const extensionName = "infinite_nexus";
 const extensionPath = `scripts/extensions/${extensionName}/`;
 
+// State
 let nexusState = {
     hp: 100,
     maxHp: 100,
     san: 100,
     maxSan: 100,
-    inventory: []
+    karma: 0, // 奖励点数
+    mission: "存活并寻找线索...", // 当前任务
+    skills: [
+        { name: "侦查", value: 50 },
+        { name: "斗殴", value: 40 },
+        { name: "闪避", value: 30 }
+    ]
 };
 
-// --- DOM Manipulation ---
+// --- DOM Generation ---
 
 function createOverlay() {
     if (document.getElementById('infinite-nexus-overlay')) return;
@@ -21,181 +29,276 @@ function createOverlay() {
     overlay.innerHTML = `
         <div class="nexus-header">
             <span>UNIVERSE NEXUS</span>
-            <span id="nexus-clock">00:00:00</span>
+            <span id="nexus-clock">D-01</span>
         </div>
         
-        <div class="nexus-stat-row">
-            <div class="nexus-label">
-                <span>INTEGRITY (HP)</span>
-                <span id="nexus-hp-val">100/100</span>
+        <div class="nexus-mission-box" id="nexus-mission">
+            [任务] ${nexusState.mission}
+        </div>
+
+        <div class="nexus-content">
+            <!-- HP -->
+            <div class="nexus-stat-row">
+                <div class="nexus-label">
+                    <span>生命值 (INTEGRITY)</span>
+                    <span id="nexus-hp-val">100/100</span>
+                </div>
+                <div class="nexus-bar-container">
+                    <div id="nexus-hp-bar" class="nexus-bar-fill nexus-hp-fill" style="width: 100%"></div>
+                </div>
             </div>
-            <div class="nexus-bar-container">
-                <div id="nexus-hp-bar" class="nexus-bar-fill nexus-hp-fill" style="width: 100%"></div>
+
+            <!-- SAN -->
+            <div class="nexus-stat-row">
+                <div class="nexus-label">
+                    <span>理智值 (RATIONALITY)</span>
+                    <span id="nexus-san-val">100/100</span>
+                </div>
+                <div class="nexus-bar-container">
+                    <div id="nexus-san-bar" class="nexus-bar-fill nexus-san-fill" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="nexus-section-title">
+                <span>技能列表 (SKILLS)</span>
+                <span class="nexus-add-btn" id="nexus-add-skill-btn" title="手动添加技能">[+]</span>
+            </div>
+            <div class="nexus-skill-grid" id="nexus-skill-list">
+                <!-- Skills injected here -->
             </div>
         </div>
 
-        <div class="nexus-stat-row">
-            <div class="nexus-label">
-                <span>RATIONALITY (SAN)</span>
-                <span id="nexus-san-val">100/100</span>
-            </div>
-            <div class="nexus-bar-container">
-                <div id="nexus-san-bar" class="nexus-bar-fill nexus-san-fill" style="width: 100%"></div>
-            </div>
+        <!-- Store Button -->
+        <div class="nexus-shop-btn" id="nexus-shop-open">
+            主神兑换 (KARMA: <span id="nexus-karma-val">0</span>)
         </div>
-
-        <div class="nexus-stat-row" style="margin-top:15px; border-top: 1px solid #333; padding-top:10px;">
-            <div class="nexus-label">INVENTORY</div>
-            <div id="nexus-inventory-list" style="font-size: 0.85em; color: #888; min-height: 20px;">
-                Checking spatial storage...
-            </div>
-        </div>
-
-        <button id="nexus-dice-btn" class="nexus-dice-btn">INITIATE SKILL CHECK (D100)</button>
     `;
 
     document.body.appendChild(overlay);
 
-    // Bind Event Listeners
-    document.getElementById('nexus-dice-btn').addEventListener('click', performDiceRoll);
+    // Create Shop Modal
+    const shopModal = document.createElement('div');
+    shopModal.id = 'nexus-shop-modal';
+    shopModal.innerHTML = `
+        <h3 style="color:#ffd700; border-bottom:1px solid #555; margin-bottom:15px; padding-bottom:10px;">主神强化兑换系统</h3>
+        <div id="nexus-shop-list">
+            <div class="nexus-shop-item">
+                <span>急救喷雾 (HP恢复)</span>
+                <button class="nexus-shop-buy" onclick="infiniteNexus.buyItem('急救喷雾', 100, '[HP +30]')">100点</button>
+            </div>
+            <div class="nexus-shop-item">
+                <span>镇静剂 (SAN恢复)</span>
+                <button class="nexus-shop-buy" onclick="infiniteNexus.buyItem('镇静剂', 100, '[SAN +20]')">100点</button>
+            </div>
+            <div class="nexus-shop-item">
+                <span>沙漠之鹰 (威力+)</span>
+                <button class="nexus-shop-buy" onclick="infiniteNexus.buyItem('沙漠之鹰', 500, '[SKILL: 枪械 60] [ITEM +沙漠之鹰]')">500点</button>
+            </div>
+        </div>
+        <button style="margin-top:20px; width:100%; padding:10px; background:#444; color:#fff; border:none;" id="nexus-shop-close">关闭连接</button>
+    `;
+    document.body.appendChild(shopModal);
+
+    // Listeners
+    document.getElementById('nexus-add-skill-btn').addEventListener('click', manualAddSkill);
+    document.getElementById('nexus-shop-open').addEventListener('click', () => { shopModal.style.display = 'block'; });
+    document.getElementById('nexus-shop-close').addEventListener('click', () => { shopModal.style.display = 'none'; });
+
+    renderSkills();
+}
+
+function renderSkills() {
+    const list = document.getElementById('nexus-skill-list');
+    if (!list) return;
+    list.innerHTML = ""; // Clear
+
+    nexusState.skills.forEach(skill => {
+        const btn = document.createElement('div');
+        btn.className = 'nexus-skill-btn';
+        btn.innerHTML = `<span>${skill.name}</span> <span class="nexus-skill-val">${skill.value}</span>`;
+        btn.onclick = () => performSkillCheck(skill.name, skill.value);
+        list.appendChild(btn);
+    });
 }
 
 function updateUI() {
     const hpBar = document.getElementById('nexus-hp-bar');
     const sanBar = document.getElementById('nexus-san-bar');
-    const hpVal = document.getElementById('nexus-hp-val');
-    const sanVal = document.getElementById('nexus-san-val');
 
     if (hpBar) {
-        const hpPercent = (nexusState.hp / nexusState.maxHp) * 100;
-        hpBar.style.width = `${Math.max(0, Math.min(100, hpPercent))}%`;
-        hpVal.textContent = `${nexusState.hp}/${nexusState.maxHp}`;
+        const hpP = (nexusState.hp / nexusState.maxHp) * 100;
+        hpBar.style.width = hpP + "%";
+        document.getElementById('nexus-hp-val').innerText = `${nexusState.hp}/${nexusState.maxHp}`;
     }
-
     if (sanBar) {
-        const sanPercent = (nexusState.san / nexusState.maxSan) * 100;
-        sanBar.style.width = `${Math.max(0, Math.min(100, sanPercent))}%`;
-        sanVal.textContent = `${nexusState.san}/${nexusState.maxSan}`;
+        const sanP = (nexusState.san / nexusState.maxSan) * 100;
+        sanBar.style.width = sanP + "%";
+        document.getElementById('nexus-san-val').innerText = `${nexusState.san}/${nexusState.maxSan}`;
     }
 
-    // Dynamic Glitch Effect on low health
+    document.getElementById('nexus-karma-val').innerText = nexusState.karma;
+    document.getElementById('nexus-mission').innerText = `[任务] ${nexusState.mission}`;
+
+    // Glitch
     const overlay = document.getElementById('infinite-nexus-overlay');
-    if (nexusState.hp < 30) {
-        overlay.classList.add('glitch-effect');
-        overlay.style.border = '1px solid red';
+    if (nexusState.hp < 30) overlay.classList.add('glitch-effect');
+    else overlay.classList.remove('glitch-effect');
+}
+
+// --- Logic & Actions ---
+
+function manualAddSkill() {
+    const name = prompt("输入技能名称 (如: 侦查)", "");
+    if (!name) return;
+    const val = prompt(`输入【${name}】的数值 (0-100)`, "50");
+    if (!val) return;
+
+    addOrUpdateSkill(name, parseInt(val));
+}
+
+function addOrUpdateSkill(name, val) {
+    const existing = nexusState.skills.find(s => s.name === name);
+    if (existing) {
+        existing.value = val; // Update
     } else {
-        overlay.classList.remove('glitch-effect');
-        overlay.style.border = '1px solid #444';
+        nexusState.skills.push({ name: name, value: val });
+    }
+    renderSkills();
+    toastr.success(`技能【${name}】已记录: ${val}`);
+}
+
+async function performSkillCheck(name, targetVal) {
+    // 1. Roll Dice
+    const result = Math.floor(Math.random() * 100) + 1;
+    const isSuccess = result <= targetVal;
+
+    // 2. Format Message
+    const outcome = isSuccess ? "成功" : "失败";
+    const crit = (result <= 5) ? " (大成功!)" : (result >= 96 ? " (大失败!)" : "");
+
+    const msg = `\n[系统判定] 玩家进行<${name}>检定: 目标${targetVal}, 掷出D100=${result} -> 【${outcome}${crit}】`;
+
+    // 3. Inject to Input Box (Standard way for V1 to ensure user sees it before sending)
+    const textarea = document.querySelector('#send_textarea');
+    if (textarea) {
+        textarea.value += msg;
+        // Trigger event to resize box or notify angular if needed
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.focus();
+        toastr.info("检定结果已填入输入框，请点击发送");
+    } else {
+        alert(msg); // Fallback
     }
 }
 
-// --- Logic Engine ---
+window.infiniteNexus = {
+    buyItem: function (itemName, cost, effectTag) {
+        if (nexusState.karma >= cost) {
+            nexusState.karma -= cost;
+            updateUI();
+
+            // Send effect to chat input
+            const textarea = document.querySelector('#send_textarea');
+            if (textarea) {
+                textarea.value += `\n[系统: 玩家购买了 ${itemName}] ${effectTag}`;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            toastr.success(`已购买: ${itemName}`);
+        } else {
+            toastr.error("奖励点数不足！");
+        }
+    }
+};
+
+// --- Parser (Regex) ---
 
 function parseSystemTags(text) {
-    let updated = false;
+    // HP/SAN/Karma
+    // Supports: [HP -10], [生命 -10], [理智 -5], [Karma +100], [点数 +100]
+    const hpRegex = /\[(?:HP|生命|生命值)\s*([:+-]?)\s*(\d+)\]/gi;
+    const sanRegex = /\[(?:SAN|理智|理智值)\s*([:+-]?)\s*(\d+)\]/gi;
+    const karmaRegex = /\[(?:Karma|点数|奖励)\s*([:+-]?)\s*(\d+)\]/gi;
+    const missionRegex = /\[(?:MISSION|任务|目标)\s*[:：]\s*(.*?)\]/i;
 
-    // Matches [HP -10], [HP +5], [SAN -2], [Hp: 50] (set), etc.
-    const hpRegex = /\[(?:HP|Health)\s*([:+-]?)\s*(\d+)\]/gi;
-    const sanRegex = /\[(?:SAN|Sanity)\s*([:+-]?)\s*(\d+)\]/gi;
+    // Skill: [SKILL: 侦查 60] or [获得技能 侦查 60]
+    const skillRegex = /\[(?:SKILL|技能|获得技能)\s*[:：]?\s*(\S+)\s*(\d+)\]/gi;
 
     let match;
+    let updated = false;
 
-    // Process HP
+    // HP
     while ((match = hpRegex.exec(text)) !== null) {
-        const operator = match[1];
-        const value = parseInt(match[2]);
-
-        if (operator === '+' || operator === '') {
-            // If no operator but just a number, usually implies damage if in context, 
-            // but strictly: "+": heal, "-": damage, ":" or empty with context logic? 
-            // Let's standardise: [HP -10] or [HP +10]. 
-            // If [HP 50] (no sign), we treat as SET? No, let's treat no sign as SET if ':' exists, else careful.
-            // Actually, typically [HP -10] is standard.
-            // Let's support: [HP -10], [HP +10], [HP: 50] (Set).
-        }
-
-        if (operator === '-') nexusState.hp -= value;
-        else if (operator === '+') nexusState.hp += value;
-        else if (operator === ':') nexusState.hp = value;
-
+        const op = match[1];
+        const val = parseInt(match[2]);
+        if (op === '-') nexusState.hp -= val;
+        else if (op === '+') nexusState.hp += val;
+        else nexusState.hp = val;
         updated = true;
     }
 
-    // Process SAN
+    // SAN
     while ((match = sanRegex.exec(text)) !== null) {
-        const operator = match[1];
-        const value = parseInt(match[2]);
-
-        if (operator === '-') nexusState.san -= value;
-        else if (operator === '+') nexusState.san += value;
-        else if (operator === ':') nexusState.san = value;
-
+        const op = match[1];
+        const val = parseInt(match[2]);
+        if (op === '-') nexusState.san -= val;
+        else if (op === '+') nexusState.san += val;
+        else nexusState.san = val;
         updated = true;
+    }
+
+    // Karma
+    while ((match = karmaRegex.exec(text)) !== null) {
+        const op = match[1];
+        const val = parseInt(match[2]);
+        if (op === '-') nexusState.karma -= val;
+        else nexusState.karma += val; // Default is add
+        updated = true;
+    }
+
+    // Mission
+    const missionMatch = text.match(missionRegex);
+    if (missionMatch) {
+        nexusState.mission = missionMatch[1];
+        updated = true;
+    }
+
+    // Skills
+    while ((match = skillRegex.exec(text)) !== null) {
+        addOrUpdateSkill(match[1], parseInt(match[2]));
+        // Note: render logic is handled in addOrUpdate
     }
 
     if (updated) {
-        // Clamp values
-        nexusState.hp = Math.min(nexusState.maxHp, Math.max(0, nexusState.hp));
-        nexusState.san = Math.min(nexusState.maxSan, Math.max(0, nexusState.san));
         updateUI();
-        toastr.info(`Status Updated: HP ${nexusState.hp} | SAN ${nexusState.san}`);
     }
 }
 
-async function performDiceRoll() {
-    // Generate result
-    const result = Math.floor(Math.random() * 100) + 1;
-    let quality = "Normal";
-    if (result <= 5) quality = "Critical Success";
-    else if (result >= 96) quality = "Fumble";
-
-    // Inject into chat
-    // We utilize the ST API to insert a message or just append to the input?
-    // Usually extensions utilize: getContext(), sendSystemMessage(), or simply modify user input.
-    // Let's try sending a system message for visibility.
-
-    // Note: 'extension_settings' and other globals are usually available in ST environment.
-    // For now, we will simulate the chat insertion log logic 
-    // or use the 'kanka' or 'dice' extension standard if known.
-    // Let's assume we can trigger a slash command.
-
-    alert(`Rolled D100: ${result} (${quality})`);
-
-    // TODO: Ideally, send this to the chat so the AI can see it.
-    // In actual ST extension: 
-    // const context = getContext();
-    // context.chat.push({ ... }); 
-    // saveChat();
-}
-
-// --- SillyTavern Hooks ---
-
-// This function runs when a message is received from AI
-function onMessageReceived(data) {
-    if (data && data.message) {
-        parseSystemTags(data.message);
+// Hook
+let lastMessageId = null;
+// Usually we hook a specific event. For direct script usage, we poll or hook jQuery.
+// Simple polling for new messages (inefficient but works for drop-in)
+setInterval(() => {
+    // In a real extension, use event_source.on(event_types.MESSAGE_RECEIVED)
+    // Here we check the last message in DOM for tags
+    const msgs = document.querySelectorAll('.mes_text');
+    if (msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        // We need to avoid re-parsing. Real ST extensions have 'context'.
+        // This is a 'dumb' parser that relies on user enabling it.
+        // For this demo, let's assume we parse only if data-parsed attribute is missing
+        if (!lastMsg.dataset.nexusParsed) {
+            parseSystemTags(lastMsg.innerText);
+            lastMsg.dataset.nexusParsed = "true";
+        }
     }
-}
+}, 1000);
 
-// Entry point
 jQuery(document).ready(function () {
-    console.log("[Infinite Nexus] Loading...");
-
-    // Inject CSS
     const link = document.createElement('link');
     link.href = extensionPath + 'style.css';
     link.type = 'text/css';
     link.rel = 'stylesheet';
     document.head.append(link);
-
     createOverlay();
-
-    // Hook into ST events (pseudo-code, as ST event names vary by version)
-    // event_source.on(event_types.MESSAGE_RECEIVED, onMessageReceived); 
-    // We will set up a MutationObserver or hook standard globals in a real deployment
-    // For now, we expose the parse function globally for testing.
-    window.infiniteNexus = {
-        parse: parseSystemTags,
-        state: nexusState
-    };
 });
