@@ -492,10 +492,14 @@ function parseSystemTags(text) {
 setInterval(() => {
     const msgs = document.querySelectorAll('.mes_text');
     if (msgs.length > 0) {
-        const lastMsg = msgs[msgs.length - 1];
-        if (!lastMsg.dataset.nexusParsed) {
-            parseSystemTags(lastMsg.innerText);
-            lastMsg.dataset.nexusParsed = "true";
+        // Scan the last 5 messages to ensure we don't miss tags if multiple messages arrive
+        const start = Math.max(0, msgs.length - 5);
+        for (let i = start; i < msgs.length; i++) {
+            const msg = msgs[i];
+            if (!msg.dataset.nexusParsed) {
+                parseSystemTags(msg.innerText);
+                msg.dataset.nexusParsed = "true";
+            }
         }
     }
 }, 1000);
@@ -507,5 +511,5 @@ jQuery(document).ready(function () {
     link.rel = 'stylesheet';
     document.head.append(link);
     setTimeout(createOverlay, 1000);
-    console.log("[Infinite Nexus] V3.6 Loaded - Cache Busted (Time+Transparency)");
+    console.log("[Infinite Nexus] V3.8 Loaded - Final Fix (WhiteBG+Multiply)");
 });
