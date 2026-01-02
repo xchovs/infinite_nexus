@@ -352,8 +352,17 @@
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
 }
 
 /* 申请列表项 */
@@ -455,4 +464,32 @@
     margin-bottom: 10px;
     border-bottom: 2px solid #ccc;
     font-weight: bold;
+}
+
+/* 好友申请弹窗 */
+#nexus-request-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    max-width: 90vw;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 9999;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+#nexus-request-modal h3 {
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #ccc;
+}
+
+#nexus-request-list {
+    max-height: 200px;
+    overflow-y: auto;
 }
