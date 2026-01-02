@@ -1,0 +1,886 @@
+:root {
+    --nexus-bg: #f5f2e9;
+    /* Rice Paper / 宣纸色 */
+    --nexus-border: #2c2c2c;
+    /* Ink / 墨色 */
+    --nexus-accent-red: #b22c2c;
+    /* Cinnabar / 朱砂 */
+    --nexus-accent-blue: #2c4b7c;
+    /* Indigo / 黛蓝 */
+    --nexus-text: #1a1a1a;
+    --nexus-font: "SimSun", "Songti SC", "Noto Serif SC", serif;
+    /* 宋体 */
+}
+
+#infinite-nexus-overlay {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    width: 300px;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+    color: var(--nexus-text);
+    z-index: 2000;
+    padding: 0;
+    border-radius: 0;
+    font-family: var(--nexus-font);
+    display: flex;
+    flex-direction: column;
+    /* IMPORTANT: No transition here to prevent drag lag */
+    /* transition: all 0.3s ease; <--- REMOVED */
+
+    /* Allow Paper Crane to hang outside */
+    overflow: visible;
+    /* Max height constraint for the whole panel */
+    max-height: 90vh;
+}
+
+/* Header & Mission */
+.nexus-header {
+    background: var(--nexus-border);
+    color: #fff;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-size: 1.1em;
+    cursor: move;
+    /* Indicate draggable */
+    flex-shrink: 0;
+}
+
+.nexus-mission-box {
+    border-left: 3px solid var(--nexus-accent-red);
+    padding: 8px 12px;
+    margin: 15px 15px 5px 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--nexus-accent-red);
+    background: rgba(178, 44, 44, 0.05);
+    flex-shrink: 0;
+}
+
+/* Stats */
+.nexus-content {
+    padding: 10px 15px;
+    overflow-y: auto;
+    /* Scrollable */
+    flex-grow: 1;
+    min-height: 0;
+    /* Flexbox scroll fix */
+}
+
+.nexus-stat-row {
+    margin-bottom: 12px;
+}
+
+.nexus-label {
+    font-size: 0.9em;
+    color: #444;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nexus-bar-container {
+    height: 10px;
+    background: #e0e0e0;
+    border: 1px solid #999;
+}
+
+.nexus-bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.4s ease;
+}
+
+.nexus-hp-fill {
+    background: var(--nexus-accent-red);
+}
+
+.nexus-san-fill {
+    background: var(--nexus-accent-blue);
+}
+
+/* Skills Grid */
+.nexus-section-title {
+    font-size: 0.9em;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 4px;
+    margin: 20px 0 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nexus-skill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    /* max-height removed, relying on parent scroll */
+}
+
+.nexus-skill-btn {
+    background: #fff;
+    border: 1px solid #bbb;
+    color: #333;
+    padding: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.nexus-skill-btn:hover {
+    border-color: var(--nexus-accent-red);
+    background: #fff5f5;
+}
+
+.nexus-skill-val {
+    font-weight: bold;
+}
+
+/* Mobile & Minimize Buttons */
+.nexus-minimize-btn,
+.nexus-close-btn {
+    cursor: pointer;
+    font-family: sans-serif;
+    padding: 0 5px;
+}
+
+/* Shop Button */
+.nexus-shop-btn {
+    margin: 15px;
+    padding: 10px;
+    background: var(--nexus-border);
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    font-weight: bold;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.nexus-shop-btn:hover {
+    background: #444;
+}
+
+/* Shop Modal */
+#nexus-shop-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 3000;
+    padding: 20px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-shop-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed #ccc;
+    align-items: center;
+}
+
+.nexus-shop-buy {
+    background: #fff;
+    border: 1px solid var(--nexus-border);
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+/* Comms Button (Paper Crane) */
+.nexus-comms-btn {
+    position: absolute;
+    left: -50px;
+    /* Adjusted size/position */
+    top: 50px;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    z-index: 2001;
+    opacity: 0.9;
+    background-image: url("paper_crane.png?v=3.9");
+    background-repeat: no-repeat;
+    background-size: contain;
+    /* Multiply blends white background into the paper, making it transparent */
+    mix-blend-mode: multiply;
+    filter: sepia(0.2) contrast(1.2);
+}
+
+.nexus-comms-btn:hover {
+    opacity: 1;
+    transform: scale(1.1) rotate(-5deg);
+}
+
+/* Comms Modal */
+#nexus-comms-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 3001;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-comms-log {
+    height: 150px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin-bottom: 10px;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 0.85em;
+    color: #444;
+}
+
+.nexus-comms-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--nexus-border);
+    background: #fff;
+    font-family: var(--nexus-font);
+    box-sizing: border-box;
+}
+
+.nexus-msg-user {
+    color: var(--nexus-accent-blue);
+    font-weight: bold;
+}
+
+/* Glitch */
+.glitch-effect {
+    border: 2px solid red !important;
+    animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+    0% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+
+    10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+    }
+
+    100% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+}
+
+/* --- Global Minimized State --- */
+#infinite-nexus-overlay.minimized .nexus-content,
+#infinite-nexus-overlay.minimized .nexus-mission-box,
+#infinite-nexus-overlay.minimized .nexus-shop-btn,
+#infinite-nexus-overlay.minimized .nexus-comms-btn {
+    display: none !important;
+}
+
+#infinite-nexus-overlay.minimized {
+    width: 300px;
+    height: auto;
+    overflow: hidden;
+    background: var(--nexus-border);
+    border-color: var(--nexus-border);
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+    #infinite-nexus-overlay {
+        top: 20px;
+        right: 5%;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    #infinite-nexus-overlay.minimized {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--nexus-accent-red);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        right: 20px;
+        top: 80px;
+        padding: 0;
+    }
+
+    #infinite-nexus-overlay.minimized .nexus-header {
+        display: none;
+    }
+
+    #infinite-nexus-overlay.minimized::after {
+        content: "无限";
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+}
+
+/* ============ 好友系统样式 ============ */
+
+/* 好友申请通知徽章 */
+.nexus-request-badge {
+    cursor: pointer;
+    animation: pulse 1s infinite;
+    font-size: 1.1em;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+/* 申请列表项 */
+.nexus-request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 8px;
+    border-bottom: 1px dashed #ccc;
+}
+
+.nexus-request-item:last-child {
+    border-bottom: none;
+}
+
+/* 好友区域 */
+.nexus-friend-section {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.nexus-friend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #f0ebe0;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.nexus-friend-header:hover {
+    background: #e8e3d8;
+}
+
+.nexus-friend-list {
+    max-height: 120px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.nexus-friend-list.collapsed {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.nexus-friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+
+.nexus-friend-item:hover {
+    background: #f5f0e5;
+}
+
+.nexus-friend-item.active {
+    background: #e8e3d8;
+    border-left: 3px solid var(--nexus-accent-red);
+}
+
+/* 当前聊天标签 */
+.nexus-current-chat-label {
+    padding: 8px;
+    font-size: 0.85em;
+    color: var(--nexus-accent-blue);
+    border-bottom: 1px solid #ccc;
+}
+
+/* 聊天占位符 */
+.nexus-comms-placeholder {
+    color: #888;
+    font-size: 0.9em;
+    text-align: center;
+    padding: 20px;
+}
+
+/* 添加按钮 */
+.nexus-add-btn {
+    cursor: pointer;
+    color: var(--nexus-accent-blue);
+    font-weight: bold;
+}
+
+.nexus-add-btn:hover {
+    color: var(--nexus-accent-red);
+}
+
+/* 通讯弹窗头部 */
+.nexus-comms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ccc;
+    font-weight: bold;
+}
+
+/* 好友申请弹窗 */
+#nexus-request-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    max-width: 90vw;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 9999;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+#nexus-request-modal h3 {
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #ccc;
+}
+
+#nexus-request-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* API Config Modal */
+#nexus-config-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    max-width: 90vw;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 10000;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-config-row {
+    margin-bottom: 10px;
+}
+
+.nexus-config-row label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.nexus-config-row input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.nexus-config-btn {
+    cursor: pointer;
+    font-size: 1.2em;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.nexus-config-btn:hover {
+    opacity: 1;
+}
+
+/* Primary Button Style */
+.nexus-btn-primary {
+    background: var(--nexus-accent-blue);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.nexus-btn-primary:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* 好友列表样式优化 */
+.nexus-friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    background: rgba(255, 255, 255, 0.5);
+    transition: background 0.2s;
+}
+
+.nexus-friend-item:last-child {
+    border-bottom: none;
+}
+
+.nexus-friend-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.nexus-friend-item.active {
+    background: rgba(var(--nexus-accent-blue-rgb), 0.1);
+    border-left: 3px solid var(--nexus-accent-blue);
+}
+
+.nexus-friend-info {
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+.nexus-friend-name {
+    font-weight: bold;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.nexus-friend-status {
+    font-size: 0.8em;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nexus-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4a4;
+    /* Online green */
+    display: inline-block;
+}
+
+.nexus-friend-actions {
+    margin-left: 10px;
+}
+
+.nexus-delete-btn {
+    color: #ccc;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+
+.nexus-delete-btn:hover {
+    color: var(--nexus-accent-red);
+}
+
+/* Profile Button */
+.nexus-profile-btn {
+    cursor: pointer;
+    font-size: 0.9em;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.nexus-profile-btn:hover {
+    opacity: 1;
+}
+
+/* Profile Modal */
+#nexus-profile-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 10001;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-profile-header {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--nexus-border);
+    font-size: 1.1em;
+}
+
+.nexus-profile-content textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.nexus-profile-info {
+    font-size: 0.8em;
+    color: #888;
+    padding: 8px 0;
+    border-top: 1px dashed #ddd;
+    margin-top: 10px;
+}
+
+/* Secondary Button */
+.nexus-btn-secondary {
+    background: #eee;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.nexus-btn-secondary:hover {
+    background: #ddd;
+}
+
+/* Clear Button */
+.nexus-clear-btn {
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.nexus-clear-btn:hover {
+    opacity: 1;
+}
+
+/* Small Button */
+.nexus-btn-small {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.nexus-btn-small:hover {
+    background: #eee;
+}
+
+/* Select Dropdown */
+.nexus-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+/* Item Display */
+.nexus-item {
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 2px 8px;
+    margin: 0 5px 4px 0;
+    font-size: 0.85em;
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+}
+
+.nexus-item:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+.nexus-item-count {
+    color: var(--nexus-accent-red);
+    font-weight: bold;
+    margin-left: 3px;
+}
+
+/* Context Menu */
+.nexus-context-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 10002;
+    min-width: 80px;
+}
+
+.nexus-menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.nexus-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.nexus-menu-danger:hover {
+    background: #fee;
+    color: var(--nexus-accent-red);
+}
+
+/* Clear Modal (通关结算) */
+#nexus-clear-modal,
+#nexus-new-dungeon-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2e 100%);
+    color: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10003;
+    min-width: 280px;
+    text-align: center;
+}
+
+.nexus-clear-header {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    background: linear-gradient(90deg, #ffd700, #ffaa00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nexus-clear-title {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: #ccc;
+}
+
+.nexus-clear-stats {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.nexus-clear-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-clear-row:last-child {
+    border-bottom: none;
+}
+
+.nexus-clear-karma {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.nexus-clear-actions {
+    margin-top: 10px;
+}
+
+/* New Dungeon Options */
+.nexus-dungeon-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.nexus-dungeon-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 100px;
+}
+
+.nexus-dungeon-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #4a9eff;
+    transform: translateY(-3px);
+}
+
+.nexus-dungeon-pink:hover {
+    border-color: #ff69b4;
+}
+
+.nexus-dungeon-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+
+.nexus-dungeon-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.nexus-dungeon-desc {
+    font-size: 0.75em;
+    color: #999;
+}
