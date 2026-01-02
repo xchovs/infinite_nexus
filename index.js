@@ -1127,7 +1127,7 @@ function parseSystemTagsForRecalc(text) {
 }
 
 window.infiniteNexus = {
-    buyItem: function(itemName, cost, effectTag) {
+    buyItem: function (itemName, cost, effectTag) {
         if (nexusState.karma >= cost) {
             nexusState.karma -= cost;
             updateUI();
@@ -1144,7 +1144,7 @@ window.infiniteNexus = {
             toastr.error("点数不足");
         }
     },
-    acceptRequest: function(idx) {
+    acceptRequest: function (idx) {
         if (!settings) return;
         const req = settings.pendingRequests[idx];
         if (req) {
@@ -1160,7 +1160,7 @@ window.infiniteNexus = {
             }
         }
     },
-    rejectRequest: function(idx) {
+    rejectRequest: function (idx) {
         if (!settings) return;
         const req = settings.pendingRequests[idx];
         if (req) {
@@ -1177,7 +1177,7 @@ window.infiniteNexus = {
     deleteTeammate: deleteTeammate,
     openProfile: openProfileModal,
     selectTeammate: selectTeammate,
-    clearHistory: function(teammateId) {
+    clearHistory: function (teammateId) {
         if (!settings) return;
         if (!confirm("确定要清空与该好友的所有对话记录吗？")) return;
         settings.commsHistory[teammateId] = [];
@@ -1339,9 +1339,9 @@ function injectCommsContext() {
     } catch (e) { console.warn("[Nexus] Context injection error:", e); }
 }
 
-jQuery(document).ready(function() {
+jQuery(document).ready(function () {
     const link = document.createElement('link');
-    link.href = extensionPath + 'style.css';
+    link.href = extensionPath + 'style.css?v=' + Date.now();
     link.type = 'text/css';
     link.rel = 'stylesheet';
     document.head.append(link);
