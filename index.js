@@ -554,14 +554,23 @@ function makeDraggable(element, handle) {
         const touch = e.touches[0];
         moveDrag(touch.clientX, touch.clientY);
     }, { passive: true });
-    document.addEventListener('touchend', endDrag);
+
+    document.addEventListener('touchend', () => {
+        const wasMinimized = element.classList.contains('minimized');
+        const wasDragging = isDragging;
+        isDragging = false;
+        // 触摸结束时，如果是 minimized 且没有移动，则展开
+        if (wasMinimized && !hasMoved) {
+            toggleMinimize();
+        }
+    });
 
     handle.addEventListener('click', (e) => {
         if (e.target.classList.contains('nexus-toggle-btn')) return;
         if (!hasMoved) toggleMinimize();
     });
 
-    // Click on minimized ball to expand
+    // Click on minimized ball to expand (for mouse)
     element.addEventListener('click', (e) => {
         if (!element.classList.contains('minimized')) return;
         if (!hasMoved) toggleMinimize();
