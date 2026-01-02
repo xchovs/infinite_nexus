@@ -1071,25 +1071,41 @@ jQuery(document).ready(function () {
     setTimeout(createOverlay, 1000);
 
     // 注册事件监听 - 当用户发送消息时注入通讯记录
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, injectCommsContext);
+    try {
+        eventSource.on(event_types.USER_MESSAGE_RENDERED, injectCommsContext);
+    } catch (e) {
+        console.warn("[Nexus] 无法注册 USER_MESSAGE_RENDERED 事件:", e);
+    }
 
     // 状态管理事件监听 - 消息变化时重算状态
-    eventSource.on(event_types.MESSAGE_DELETED, () => {
-        console.log("[Nexus] 检测到消息删除，重算状态");
-        recalculateStateFromChat();
-    });
-    eventSource.on(event_types.MESSAGE_EDITED, () => {
-        console.log("[Nexus] 检测到消息编辑，重算状态");
-        recalculateStateFromChat();
-    });
-    eventSource.on(event_types.CHAT_CHANGED, () => {
-        console.log("[Nexus] 检测到聊天切换，重算状态");
-        setTimeout(recalculateStateFromChat, 500); // 延迟等待聊天加载
-    });
-    eventSource.on(event_types.MESSAGE_SWIPED, () => {
-        console.log("[Nexus] 检测到消息滑动切换，重算状态");
-        recalculateStateFromChat();
-    });
+    try {
+        if (event_types.MESSAGE_DELETED) {
+            eventSource.on(event_types.MESSAGE_DELETED, () => {
+                console.log("[Nexus] 检测到消息删除，重算状态");
+                recalculateStateFromChat();
+            });
+        }
+        if (event_types.MESSAGE_EDITED) {
+            eventSource.on(event_types.MESSAGE_EDITED, () => {
+                console.log("[Nexus] 检测到消息编辑，重算状态");
+                recalculateStateFromChat();
+            });
+        }
+        if (event_types.CHAT_CHANGED) {
+            eventSource.on(event_types.CHAT_CHANGED, () => {
+                console.log("[Nexus] 检测到聊天切换，重算状态");
+                setTimeout(recalculateStateFromChat, 500);
+            });
+        }
+        if (event_types.MESSAGE_SWIPED) {
+            eventSource.on(event_types.MESSAGE_SWIPED, () => {
+                console.log("[Nexus] 检测到消息滑动切换，重算状态");
+                recalculateStateFromChat();
+            });
+        }
+    } catch (e) {
+        console.warn("[Nexus] 注册状态管理事件时出错:", e);
+    }
 
     console.log("[Infinite Nexus] V4.0 Loaded - Teammate System + State Management Active");
 });
