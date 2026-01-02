@@ -216,6 +216,7 @@ function createOverlay() {
         
         <div id="nexus-current-chat-label" class="nexus-current-chat-label" style="display:none;">
             与 <span id="nexus-chat-target"></span> 的传音
+            <span id="nexus-clear-history" class="nexus-clear-btn" title="清空对话记录">🗑️</span>
         </div>
         
         <div id="nexus-comms-log" class="nexus-comms-log">
@@ -254,14 +255,13 @@ function createOverlay() {
             <input type="password" id="nexus-api-key" placeholder="sk-...">
         </div>
         <div class="nexus-config-row">
-            <label>Model Name</label>
-            <input type="text" id="nexus-api-model" placeholder="gpt-3.5-turbo">
+            <label>Model <button id="nexus-fetch-models" class="nexus-btn-small">获取列表</button></label>
+            <select id="nexus-api-model" class="nexus-select">
+                <option value="">-- 先获取模型列表 --</option>
+            </select>
         </div>
-        <div style="text-align:right; margin-top:10px;">
+        <div style="text-align:right; margin-top:15px;">
             <button id="nexus-config-save" class="nexus-btn-primary">保存设置</button>
-        </div>
-        <div style="margin-top:10px; font-size:0.8em; color:#666;">
-            * 此 API 用于队友独立思考和回复，不通过 SillyTavern 主系统。
         </div>
     `;
     document.body.appendChild(configModal);
@@ -327,6 +327,13 @@ function createOverlay() {
     });
     document.getElementById('nexus-add-friend').addEventListener('click', addTeammateManual);
 
+    // Clear history button binding
+    document.getElementById('nexus-clear-history').addEventListener('click', () => {
+        if (settings && settings.currentTeammate) {
+            infiniteNexus.clearHistory(settings.currentTeammate);
+        }
+    });
+
     // Request modal bindings
     document.getElementById('nexus-request-badge').addEventListener('click', () => {
         requestModal.style.display = 'block';
@@ -341,16 +348,67 @@ function createOverlay() {
         if (settings && settings.aiConfig) {
             document.getElementById('nexus-api-endpoint').value = settings.aiConfig.endpoint || '';
             document.getElementById('nexus-api-key').value = settings.aiConfig.apiKey || '';
-            document.getElementById('nexus-api-model').value = settings.aiConfig.model || '';
+            // 如果有保存的模型，添加到选择器
+            const modelSelect = document.getElementById('nexus-api-model');
+            if (settings.aiConfig.model) {
+                const opt = document.createElement('option');
+                opt.value = settings.aiConfig.model;
+                opt.text = settings.aiConfig.model;
+                opt.selected = true;
+                modelSelect.appendChild(opt);
+            }
         }
     });
     document.getElementById('nexus-config-close').addEventListener('click', () => { configModal.style.display = 'none'; });
+
+    // 获取模型列表
+    document.getElementById('nexus-fetch-models').addEventListener('click', async () => {
+        const endpoint = document.getElementById('nexus-api-endpoint').value.trim();
+        const apiKey = document.getElementById('nexus-api-key').value.trim();
+
+        if (!endpoint || !apiKey) {
+            toastr.warning("请先填写 Endpoint 和 API Key", "Infinite Nexus");
+            return;
+        }
+
+        try {
+            toastr.info("正在获取模型列表...", "Infinite Nexus");
+            let url = endpoint;
+            if (!url.endsWith('/')) url += '/';
+            url += 'models';
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const modelSelect = document.getElementById('nexus-api-model');
+            modelSelect.innerHTML = '<option value="">-- 选择模型 --</option>';
+
+            if (data.data && Array.isArray(data.data)) {
+                data.data.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.text = m.id;
+                    modelSelect.appendChild(opt);
+                });
+                toastr.success(`已获取 ${data.data.length} 个模型`, "Infinite Nexus");
+            }
+        } catch (error) {
+            console.error("[Nexus] Fetch models error:", error);
+            toastr.error("获取模型列表失败: " + error.message, "Infinite Nexus");
+        }
+    });
+
     document.getElementById('nexus-config-save').addEventListener('click', () => {
         if (!settings) return;
         settings.aiConfig = {
             endpoint: document.getElementById('nexus-api-endpoint').value.trim(),
             apiKey: document.getElementById('nexus-api-key').value.trim(),
-            model: document.getElementById('nexus-api-model').value.trim()
+            model: document.getElementById('nexus-api-model').value
         };
         saveSettingsDebounced();
         toastr.success("API 设置已保存", "Infinite Nexus");
@@ -1316,8 +1374,26 @@ window.infiniteNexus = {
     deleteTeammate: deleteTeammate,
 
     // 打开角色档案
-    openProfile: openProfileModal
+    openProfile: openProfileModal,
+
+    // 选择队友
+    selectTeammate: selectTeammate,
+
+    // 清空对话记录
+    clearHistory: function (teammateId) {
+        if (!settings) return;
+        if (!confirm("确定要清空与该好友的所有对话记录吗？")) return;
+        settings.commsHistory[teammateId] = [];
+        saveSettingsDebounced();
+        if (settings.currentTeammate === teammateId) {
+            renderCommsLog(teammateId);
+        }
+        toastr.info("对话记录已清空", "Infinite Nexus");
+    }
 };
+
+// 暴露 selectTeammate 到全局
+window.selectTeammate = selectTeammate;
 
 function parseSystemTags(text) {
     if (!text) return;
