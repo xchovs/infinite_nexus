@@ -981,10 +981,23 @@ function renderInventory() {
     nexusState.inventory.forEach(item => {
         const div = document.createElement('div');
         div.className = 'nexus-item';
-        div.title = item.consumable ? '消耗品 (点击使用)' : '物品 (点击无限使用/丢弃)';
+        div.title = item.consumable ? '消耗品 (点击使用)' : '物品 (点击使用/丢弃)';
         const countBadge = `<span class="nexus-item-count" style="margin-left:5px; color:#888; font-size:0.9em;">x${item.count}</span>`;
         div.innerHTML = `${item.name}${countBadge}`;
-        div.onclick = (e) => { e.preventDefault(); showItemContextMenu(e.pageX, e.pageY, item.name, item.consumable); };
+
+        // Mouse click
+        div.addEventListener('click', (e) => {
+            e.preventDefault();
+            showItemContextMenu(e.pageX, e.pageY, item.name, item.consumable);
+        });
+
+        // Touch support
+        div.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            showItemContextMenu(touch.pageX, touch.pageY, item.name, item.consumable);
+        });
+
         list.appendChild(div);
     });
 }
@@ -997,17 +1010,34 @@ function showItemContextMenu(x, y, itemName, isConsumable) {
     menu.className = 'nexus-context-menu';
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
-    menu.innerHTML = `
-        <div class="nexus-menu-item" onclick="infiniteNexus.useItem('${itemName}')">使用</div>
-        <div class="nexus-menu-item nexus-menu-danger" onclick="infiniteNexus.dropItem('${itemName}')">丢弃</div>
-    `;
+
+    // 创建按钮而不是用 innerHTML onclick
+    const useBtn = document.createElement('div');
+    useBtn.className = 'nexus-menu-item';
+    useBtn.textContent = '使用';
+    useBtn.addEventListener('click', () => infiniteNexus.useItem(itemName));
+    useBtn.addEventListener('touchend', (e) => { e.preventDefault(); infiniteNexus.useItem(itemName); });
+
+    const dropBtn = document.createElement('div');
+    dropBtn.className = 'nexus-menu-item nexus-menu-danger';
+    dropBtn.textContent = '丢弃';
+    dropBtn.addEventListener('click', () => infiniteNexus.dropItem(itemName));
+    dropBtn.addEventListener('touchend', (e) => { e.preventDefault(); infiniteNexus.dropItem(itemName); });
+
+    menu.appendChild(useBtn);
+    menu.appendChild(dropBtn);
     document.body.appendChild(menu);
+
+    // 点击/触摸其他地方关闭菜单
     setTimeout(() => {
-        document.addEventListener('click', function closeMenu() {
+        function closeMenu() {
             menu.remove();
             document.removeEventListener('click', closeMenu);
-        }, { once: true });
-    }, 10);
+            document.removeEventListener('touchend', closeMenu);
+        }
+        document.addEventListener('click', closeMenu, { once: true });
+        document.addEventListener('touchend', closeMenu, { once: true });
+    }, 50);
 }
 
 function renderShopItems() {
