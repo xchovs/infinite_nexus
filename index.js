@@ -82,6 +82,7 @@ function createOverlay() {
 
     const overlay = document.createElement('div');
     overlay.id = 'infinite-nexus-overlay';
+    overlay.className = 'minimized'; // 默认收起状态
 
     overlay.innerHTML = `
         <div class="nexus-comms-btn" id="nexus-comms-open" title="队友传音"></div>
@@ -521,18 +522,33 @@ function makeDraggable(element, handle) {
 
     function endDrag() { isDragging = false; }
 
-    // Mouse events
+    // Mouse events - handle (header)
     handle.addEventListener('mousedown', (e) => {
         if (startDrag(e.clientX, e.clientY, e)) e.preventDefault();
     });
+
+    // Mouse events - element itself (for minimized state)
+    element.addEventListener('mousedown', (e) => {
+        if (!element.classList.contains('minimized')) return;
+        if (startDrag(e.clientX, e.clientY, e)) e.preventDefault();
+    });
+
     document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
     document.addEventListener('mouseup', endDrag);
 
-    // Touch events
+    // Touch events - handle (header)
     handle.addEventListener('touchstart', (e) => {
         const touch = e.touches[0];
         if (startDrag(touch.clientX, touch.clientY, e)) e.preventDefault();
     }, { passive: false });
+
+    // Touch events - element itself (for minimized state)
+    element.addEventListener('touchstart', (e) => {
+        if (!element.classList.contains('minimized')) return;
+        const touch = e.touches[0];
+        if (startDrag(touch.clientX, touch.clientY, e)) e.preventDefault();
+    }, { passive: false });
+
     document.addEventListener('touchmove', (e) => {
         if (!isDragging) return;
         const touch = e.touches[0];
@@ -542,6 +558,12 @@ function makeDraggable(element, handle) {
 
     handle.addEventListener('click', (e) => {
         if (e.target.classList.contains('nexus-toggle-btn')) return;
+        if (!hasMoved) toggleMinimize();
+    });
+
+    // Click on minimized ball to expand
+    element.addEventListener('click', (e) => {
+        if (!element.classList.contains('minimized')) return;
         if (!hasMoved) toggleMinimize();
     });
 }
