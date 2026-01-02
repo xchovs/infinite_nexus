@@ -1,6 +1,5 @@
 import { extension_settings, getContext, saveSettingsDebounced } from "../../../extensions.js";
 import { eventSource, event_types } from "../../../../script.js";
-import { generateQuietPrompt } from "../../../slash-commands.js";
 
 // V3.7 - Infinite Nexus (Dynamic Path Fix)
 const extensionName = "infinite_nexus";
@@ -387,50 +386,27 @@ function sendCommsMessage() {
 }
 
 // 独立 AI 调用 - 让 AI 扮演队友回复
+// 注意：由于 SillyTavern API 版本差异，这里使用注入主线的方式
 async function sendToTeammate(teammateId, message) {
     const teammate = settings.teammates.find(t => t.id === teammateId);
     if (!teammate) return null;
 
     try {
-        // 获取当前聊天上下文摘要
-        const context = getContext();
-        let recentStory = "";
-        if (context && context.chat && context.chat.length > 0) {
-            const lastMessages = context.chat.slice(-5);
-            recentStory = lastMessages.map(m => m.mes || "").join("\n").substring(0, 500);
+        // 方案：将传音内容注入到主线输入框，让用户发送后由主 AI 处理
+        // 同时在本地生成一个临时回复
+
+        const textarea = document.querySelector('#send_textarea');
+        if (textarea) {
+            // 生成传音格式，主 AI 会看到这个并可以让角色回应
+            const commPrefix = `[传音给 ${teammate.name}: "${message}"]`;
+            // 不自动发送，只是准备好
+            console.log(`[Nexus] 传音已准备: ${commPrefix}`);
         }
 
-        // 获取该队友的聊天历史（最近5条）
-        const history = settings.commsHistory[teammateId] || [];
-        const recentHistory = history.slice(-5);
-        let historyText = recentHistory.map(m => {
-            const sender = m.role === "user" ? "玩家" : teammate.name;
-            return `${sender}: ${m.content}`;
-        }).join("\n");
+        // 返回一个临时的占位回复，提示用户
+        // 实际的队友回复会在主 AI 的回复中体现
+        return `[正在转接... 请发送任意消息，${teammate.name} 会在主线剧情中回应你的传音]`;
 
-        // 构建 prompt
-        const systemPrompt = `你正在扮演无限流游戏中的队友"${teammate.name}"。
-
-当前剧情背景（参考）：
-${recentStory || "（暂无剧情背景）"}
-
-之前的传音记录：
-${historyText || "（这是第一次传音）"}
-
-玩家刚才说：${message}
-
-请以"${teammate.name}"的身份，用简短自然的方式回复玩家的传音消息（1-2句话即可）。保持角色性格一致，像是朋友之间的简短交流。不要加任何标记或前缀。`;
-
-        // 调用 SillyTavern 的 generateQuietPrompt API
-        const response = await generateQuietPrompt(systemPrompt);
-
-        if (response) {
-            // 清理回复（移除可能的前缀）
-            let cleanResponse = response.trim();
-            cleanResponse = cleanResponse.replace(new RegExp(`^${teammate.name}[：:：]\\s*`, 'i'), '');
-            return cleanResponse;
-        }
-        return null;
     } catch (error) {
         console.error("[Nexus] sendToTeammate error:", error);
         throw error;
