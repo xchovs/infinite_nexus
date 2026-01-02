@@ -89,7 +89,7 @@ function createOverlay() {
             <span>无限终端</span>
             <span class="nexus-toggle-btn" id="nexus-toggle-btn"></span>
         </div>
-        <div class="nexus-body" id="nexus-body">
+        <div class="nexus-content" id="nexus-body">
             <div class="nexus-section">
                 <div class="nexus-section-title">状态</div>
                 <div class="nexus-stat-row">
@@ -1341,7 +1341,7 @@ function injectCommsContext() {
 
 jQuery(document).ready(function () {
     const link = document.createElement('link');
-    link.href = extensionPath + 'style.css?v=' + Date.now();
+    link.href = extensionPath + 'nexus-style.css';
     link.type = 'text/css';
     link.rel = 'stylesheet';
     document.head.append(link);
