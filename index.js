@@ -1,5 +1,5 @@
-import { extension_settings, getContext, saveSettingsDebounced } from "../../../extensions.js";
-import { eventSource, event_types } from "../../../../script.js";
+import { extension_settings, getContext } from "../../../extensions.js";
+import { eventSource, event_types, saveSettingsDebounced } from "../../../../script.js";
 
 // V3.7 - Infinite Nexus (Dynamic Path Fix)
 const extensionName = "infinite_nexus";
