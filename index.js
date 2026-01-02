@@ -499,47 +499,65 @@ function createOverlay() {
 function makeDraggable(element, handle) {
     let isDragging = false, startX, startY, startLeft, startTop;
     let hasMoved = false;
-    handle.addEventListener('mousedown', (e) => {
-        if (e.target.classList.contains('nexus-toggle-btn')) return;
+
+    function startDrag(clientX, clientY, e) {
+        if (e && e.target && e.target.classList.contains('nexus-toggle-btn')) return false;
         isDragging = true; hasMoved = false;
-        startX = e.clientX; startY = e.clientY;
+        startX = clientX; startY = clientY;
         const rect = element.getBoundingClientRect();
         startLeft = rect.left; startTop = rect.top;
-        e.preventDefault();
-    });
-    document.addEventListener('mousemove', (e) => {
+        return true;
+    }
+
+    function moveDrag(clientX, clientY) {
         if (!isDragging) return;
-        const dx = e.clientX - startX, dy = e.clientY - startY;
+        const dx = clientX - startX, dy = clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved = true;
         element.style.left = (startLeft + dx) + 'px';
         element.style.top = (startTop + dy) + 'px';
         element.style.right = 'auto';
         element.style.bottom = 'auto';
+    }
+
+    function endDrag() { isDragging = false; }
+
+    // Mouse events
+    handle.addEventListener('mousedown', (e) => {
+        if (startDrag(e.clientX, e.clientY, e)) e.preventDefault();
     });
-    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch events
+    handle.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        if (startDrag(touch.clientX, touch.clientY, e)) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        moveDrag(touch.clientX, touch.clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', endDrag);
+
     handle.addEventListener('click', (e) => {
         if (e.target.classList.contains('nexus-toggle-btn')) return;
         if (!hasMoved) toggleMinimize();
     });
 }
 
-// 专用于 Modal 的拖拽函数（无点击最小化逻辑）
+// 专用于 Modal 的拖拽函数（无点击最小化逻辑，支持触摸）
 function makeModalDraggable(element, handle) {
     let isDragging = false, startX, startY, startLeft, startTop;
     let initialized = false;
 
     handle.style.cursor = 'move';
 
-    handle.addEventListener('mousedown', (e) => {
-        // 忽略关闭按钮等子元素
-        if (e.target.tagName === 'SPAN' && e.target.style.cursor === 'pointer') return;
-        if (e.target.id && e.target.id.includes('close')) return;
-
+    function startDrag(clientX, clientY) {
         isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
+        startX = clientX;
+        startY = clientY;
 
-        // 第一次拖拽时，清除 transform 并设置绝对像素位置
         const rect = element.getBoundingClientRect();
         if (!initialized) {
             element.style.transform = 'none';
@@ -550,28 +568,50 @@ function makeModalDraggable(element, handle) {
 
         startLeft = parseInt(element.style.left) || rect.left;
         startTop = parseInt(element.style.top) || rect.top;
+    }
 
-        e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
+    function moveDrag(clientX, clientY) {
         if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
 
         let newTop = startTop + dy;
-        // 防止拖到屏幕顶部以上
         if (newTop < 0) newTop = 0;
 
         element.style.left = (startLeft + dx) + 'px';
         element.style.top = newTop + 'px';
         element.style.right = 'auto';
         element.style.bottom = 'auto';
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
+    function endDrag() {
         isDragging = false;
+    }
+
+    // Mouse events
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'SPAN' && e.target.style.cursor === 'pointer') return;
+        if (e.target.id && e.target.id.includes('close')) return;
+        startDrag(e.clientX, e.clientY);
+        e.preventDefault();
     });
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch events
+    handle.addEventListener('touchstart', (e) => {
+        if (e.target.tagName === 'SPAN' && e.target.style.cursor === 'pointer') return;
+        if (e.target.id && e.target.id.includes('close')) return;
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY);
+        e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        moveDrag(touch.clientX, touch.clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', endDrag);
 }
 
 function toggleMinimize() {

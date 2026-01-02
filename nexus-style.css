@@ -579,3 +579,39 @@
     background: var(--nexus-gold-dim);
     border-radius: 2px;
 }
+
+/* Comms Header - Always same line */
+.nexus-comms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--nexus-glass-border);
+    color: var(--nexus-gold);
+    font-weight: bold;
+}
+
+.nexus-comms-header>span:first-child {
+    white-space: nowrap;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    #nexus-comms-modal {
+        width: 95%;
+        max-width: none;
+        left: 2.5%;
+        transform: none;
+    }
+
+    .nexus-comms-header {
+        font-size: 0.95em;
+    }
+
+    .nexus-btn-small {
+        padding: 3px 8px;
+        font-size: 0.8em;
+    }
+}
