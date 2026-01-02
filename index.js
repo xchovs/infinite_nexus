@@ -49,10 +49,15 @@ const BASE_STATE = {
 function initSettings() {
     if (!extension_settings[extensionName]) {
         extension_settings[extensionName] = {
-            teammates: [],           // [{ id, name, source: "manual"|"worldinfo"|"request" }]
+            teammates: [],           // [{ id, name, source, signature }]
             commsHistory: {},        // { teammateId: [{ role, content }] }
             pendingRequests: [],     // [{ name, reason, time }] 待确认的好友申请
-            currentTeammate: null    // 当前选中的队友 ID
+            currentTeammate: null,   // 当前选中的队友 ID
+            aiConfig: {              // 独立 AI 配置
+                endpoint: '',        // API 端点 (如 https://api.openai.com/v1)
+                apiKey: '',          // API Key
+                model: 'gpt-3.5-turbo' // 模型名称
+            }
         };
     }
     // Upgrade existing settings if missing new fields
@@ -62,9 +67,43 @@ function initSettings() {
     if (!extension_settings[extensionName].currentTeammate) {
         extension_settings[extensionName].currentTeammate = null;
     }
+    if (!extension_settings[extensionName].aiConfig) {
+        extension_settings[extensionName].aiConfig = {
+            endpoint: '',
+            apiKey: '',
+            model: 'gpt-3.5-turbo'
+        };
+    }
     return extension_settings[extensionName];
 }
 let settings = null; // Will be initialized in jQuery.ready
+
+const SIGNATURE_POOL = [
+    "正在擦拭武器...",
+    "观察着周围的环境...",
+    "闭目养神中...",
+    "正在包扎伤口...",
+    "低声祈祷...",
+    "检查弹药存量...",
+    "正在阅读任务简报...",
+    "注视着远方...",
+    "正在磨刀...",
+    "似乎在思考什么...",
+    "警惕地环顾四周...",
+    "正在整理背包...",
+    "靠在墙边休息...",
+    "正在哼着小曲...",
+    "面无表情地发呆...",
+    "正在记录什么...",
+    "眼神空洞...",
+    "正在吃压缩饼干...",
+    "把玩着手中的硬币...",
+    "正在调试通讯器..."
+];
+
+function getRandomSignature() {
+    return SIGNATURE_POOL[Math.floor(Math.random() * SIGNATURE_POOL.length)];
+}
 
 function createOverlay() {
     if (document.getElementById('infinite-nexus-overlay')) return;
@@ -161,6 +200,7 @@ function createOverlay() {
             <span>纸鹤传音</span>
             <div style="display:flex; gap:10px; align-items:center;">
                 <span id="nexus-request-badge" class="nexus-request-badge" style="display:none;" title="好友申请">🔔</span>
+                <span id="nexus-api-config-btn" class="nexus-config-btn" title="API设置">⚙️</span>
                 <span style="cursor:pointer;" id="nexus-comms-close">✕</span>
             </div>
         </div>
@@ -197,6 +237,69 @@ function createOverlay() {
     `;
     document.body.appendChild(requestModal);
 
+    // AI Config Modal
+    const configModal = document.createElement('div');
+    configModal.id = 'nexus-config-modal';
+    configModal.innerHTML = `
+        <h3 style="border-bottom:1px dashed #ccc; margin-bottom:10px; padding-bottom:5px;">
+            独立 API 设置
+            <span style="float:right; cursor:pointer;" id="nexus-config-close">✕</span>
+        </h3>
+        <div class="nexus-config-row">
+            <label>API Endpoint (Base URL)</label>
+            <input type="text" id="nexus-api-endpoint" placeholder="e.g. https://api.openai.com/v1">
+        </div>
+        <div class="nexus-config-row">
+            <label>API Key</label>
+            <input type="password" id="nexus-api-key" placeholder="sk-...">
+        </div>
+        <div class="nexus-config-row">
+            <label>Model Name</label>
+            <input type="text" id="nexus-api-model" placeholder="gpt-3.5-turbo">
+        </div>
+        <div style="text-align:right; margin-top:10px;">
+            <button id="nexus-config-save" class="nexus-btn-primary">保存设置</button>
+        </div>
+        <div style="margin-top:10px; font-size:0.8em; color:#666;">
+            * 此 API 用于队友独立思考和回复，不通过 SillyTavern 主系统。
+        </div>
+    `;
+    document.body.appendChild(configModal);
+
+    // Profile Modal (角色档案)
+    const profileModal = document.createElement('div');
+    profileModal.id = 'nexus-profile-modal';
+    profileModal.innerHTML = `
+        <h3 class="nexus-profile-header">
+            角色档案
+            <span style="float:right; cursor:pointer;" id="nexus-profile-close">✕</span>
+        </h3>
+        <div class="nexus-profile-content">
+            <div class="nexus-config-row">
+                <label>名称</label>
+                <input type="text" id="nexus-profile-name" readonly style="background:#eee;">
+            </div>
+            <div class="nexus-config-row">
+                <label>性格标签 <span style="font-weight:normal; color:#888;">(用逗号分隔)</span></label>
+                <input type="text" id="nexus-profile-traits" placeholder="沉稳, 善战, 前军人">
+            </div>
+            <div class="nexus-config-row">
+                <label>经历描述</label>
+                <textarea id="nexus-profile-backstory" rows="3" placeholder="在第3副本相遇..."></textarea>
+            </div>
+            <div class="nexus-config-row">
+                <label>备注</label>
+                <textarea id="nexus-profile-notes" rows="2" placeholder="用户自定义备注..."></textarea>
+            </div>
+            <div class="nexus-profile-info" id="nexus-profile-source"></div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button id="nexus-profile-save" class="nexus-btn-primary" style="flex:1;">保存</button>
+                <button id="nexus-profile-refresh" class="nexus-btn-secondary" style="flex:1;">重新提取</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(profileModal);
+
     // Bindings
     document.getElementById('nexus-add-skill-btn').addEventListener('click', manualAddSkill);
     document.getElementById('nexus-universal-dice').addEventListener('click', () => performSkillCheck("运气", 50, true));
@@ -230,6 +333,47 @@ function createOverlay() {
         renderRequestList();
     });
     document.getElementById('nexus-request-close').addEventListener('click', () => { requestModal.style.display = 'none'; });
+
+    // Config modal bindings
+    document.getElementById('nexus-api-config-btn').addEventListener('click', () => {
+        configModal.style.display = 'block';
+        // Load current settings
+        if (settings && settings.aiConfig) {
+            document.getElementById('nexus-api-endpoint').value = settings.aiConfig.endpoint || '';
+            document.getElementById('nexus-api-key').value = settings.aiConfig.apiKey || '';
+            document.getElementById('nexus-api-model').value = settings.aiConfig.model || '';
+        }
+    });
+    document.getElementById('nexus-config-close').addEventListener('click', () => { configModal.style.display = 'none'; });
+    document.getElementById('nexus-config-save').addEventListener('click', () => {
+        if (!settings) return;
+        settings.aiConfig = {
+            endpoint: document.getElementById('nexus-api-endpoint').value.trim(),
+            apiKey: document.getElementById('nexus-api-key').value.trim(),
+            model: document.getElementById('nexus-api-model').value.trim()
+        };
+        saveSettingsDebounced();
+        toastr.success("API 设置已保存", "Infinite Nexus");
+        configModal.style.display = 'none';
+    });
+
+    // Profile modal bindings
+    document.getElementById('nexus-profile-close').addEventListener('click', () => {
+        profileModal.style.display = 'none';
+    });
+    document.getElementById('nexus-profile-save').addEventListener('click', () => {
+        saveCurrentProfile();
+        profileModal.style.display = 'none';
+    });
+    document.getElementById('nexus-profile-refresh').addEventListener('click', async () => {
+        const name = document.getElementById('nexus-profile-name').value;
+        const teammate = settings.teammates.find(t => t.name === name);
+        if (teammate) {
+            toastr.info("正在重新提取档案...", "Infinite Nexus");
+            await extractTeammateProfile(teammate);
+            openProfileModal(teammate.id);
+        }
+    });
 
     // Make Draggable + Smart Toggle on Header
     makeDraggable(overlay, document.getElementById('nexus-header-bar'));
@@ -385,31 +529,218 @@ function sendCommsMessage() {
     });
 }
 
-// 独立 AI 调用 - 让 AI 扮演队友回复
-// 注意：由于 SillyTavern API 版本差异，这里使用注入主线的方式
+// 独立 AI 调用 - 核心函数
+async function callIndependentAI(systemPrompt, userMessage, history = []) {
+    if (!settings.aiConfig || !settings.aiConfig.endpoint || !settings.aiConfig.apiKey) {
+        throw new Error("API 未配置");
+    }
+
+    const { endpoint, apiKey, model } = settings.aiConfig;
+    // Normalize endpoint url
+    let url = endpoint;
+    if (!url.endsWith('/')) url += '/';
+    // If user just provided base url like https://api.openai.com/v1, append chat/completions
+    // If they provided full path, leave it. Simple heuristic: check if ends in chat/completions
+    if (!url.includes('/chat/completions')) {
+        url += 'chat/completions';
+    }
+
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: userMessage }
+    ];
+
+    console.log("[Nexus] Calling Independent AI:", url, messages);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: model || 'gpt-3.5-turbo',
+            messages: messages,
+            max_tokens: 200, // Short replies
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices || data.choices.length === 0) {
+        throw new Error("No choices returned from AI");
+    }
+    return data.choices[0].message.content.trim();
+}
+
+// 发送消息给队友 (使用独立 API)
 async function sendToTeammate(teammateId, message) {
     const teammate = settings.teammates.find(t => t.id === teammateId);
     if (!teammate) return null;
 
-    try {
-        // 方案：将传音内容注入到主线输入框，让用户发送后由主 AI 处理
-        // 同时在本地生成一个临时回复
+    if (!settings.aiConfig || !settings.aiConfig.endpoint) {
+        toastr.warning("请先点击传音面板的 ⚙️ 按钮配置独立 API", "Infinite Nexus");
+        return "[系统提示: 未配置 API，无法连接队友]";
+    }
 
-        const textarea = document.querySelector('#send_textarea');
-        if (textarea) {
-            // 生成传音格式，主 AI 会看到这个并可以让角色回应
-            const commPrefix = `[传音给 ${teammate.name}: "${message}"]`;
-            // 不自动发送，只是准备好
-            console.log(`[Nexus] 传音已准备: ${commPrefix}`);
+    try {
+        // 构建 System Prompt - 使用角色档案信息
+        const traitsDesc = teammate.traits && teammate.traits.length > 0
+            ? teammate.traits.join('、')
+            : '忠诚、可靠';
+        const backstoryDesc = teammate.backstory
+            ? `背景: ${teammate.backstory}`
+            : '';
+
+        const systemPrompt = `你现在扮演 Infinite Nexus 系统中的队友 "${teammate.name}"。
+性格特征: ${traitsDesc}
+${backstoryDesc}
+你们正在一个危险的无限流副本中。
+请以 "${teammate.name}" 的身份回复玩家的消息。
+回复要简短有力（50字以内），符合口语习惯和你的性格特征。不要写动作描述，只写对话内容。`;
+
+        // 获取最近的历史记录 (最后 6 条)
+        const history = (settings.commsHistory[teammateId] || [])
+            .slice(-6)
+            .map(entry => ({ role: entry.role, content: entry.content }));
+
+        const reply = await callIndependentAI(systemPrompt, message, history);
+
+        // 随机更新签名 (30% 概率)
+        if (Math.random() < 0.3) {
+            teammate.signature = getRandomSignature();
+            saveSettingsDebounced();
+            renderFriendList();
         }
 
-        // 返回一个临时的占位回复，提示用户
-        // 实际的队友回复会在主 AI 的回复中体现
-        return `[正在转接... 请发送任意消息，${teammate.name} 会在主线剧情中回应你的传音]`;
+        return reply;
 
     } catch (error) {
         console.error("[Nexus] sendToTeammate error:", error);
-        throw error;
+        toastr.error(`API 调用失败: ${error.message}`, "Infinite Nexus");
+        return `[信号中断: ${error.message}]`;
+    }
+}
+
+// ============ 角色档案提取 ============
+async function extractTeammateProfile(teammate) {
+    if (!teammate) return;
+
+    console.log(`[Nexus] 开始提取 ${teammate.name} 的角色档案...`);
+
+    // 1. 先尝试从 WorldInfo 读取
+    const worldInfoProfile = getProfileFromWorldInfo(teammate.name);
+    if (worldInfoProfile) {
+        teammate.worldInfoKey = worldInfoProfile.key;
+        if (worldInfoProfile.content) {
+            // 用 AI 从 WorldInfo 内容中提取结构化信息
+            await extractFromText(teammate, worldInfoProfile.content, "worldinfo");
+            return;
+        }
+    }
+
+    // 2. 从聊天记录提取
+    try {
+        const context = getContext();
+        if (context && context.chat && context.chat.length > 0) {
+            // 获取最近 20 条消息，拼接成文本
+            const recentChat = context.chat.slice(-20)
+                .map(m => m.mes || "")
+                .filter(m => m.includes(teammate.name))
+                .join("\n");
+
+            if (recentChat.length > 50) {
+                await extractFromText(teammate, recentChat, "chat");
+            }
+        }
+    } catch (error) {
+        console.error("[Nexus] 聊天记录提取失败:", error);
+    }
+}
+
+// 从 WorldInfo 获取角色信息
+function getProfileFromWorldInfo(name) {
+    try {
+        const context = getContext();
+        if (!context || !context.worldInfo) {
+            // 尝试其他方式获取 worldInfo
+            if (typeof SillyTavern !== 'undefined') {
+                const stContext = SillyTavern.getContext();
+                if (stContext && stContext.worldInfo) {
+                    return findWorldInfoEntry(stContext.worldInfo, name);
+                }
+            }
+            return null;
+        }
+        return findWorldInfoEntry(context.worldInfo, name);
+    } catch (error) {
+        console.error("[Nexus] WorldInfo 读取失败:", error);
+        return null;
+    }
+}
+
+function findWorldInfoEntry(worldInfo, name) {
+    if (!worldInfo || !Array.isArray(worldInfo)) return null;
+
+    // 查找匹配名字的条目
+    const entry = worldInfo.find(w =>
+        w.key && (
+            w.key.toLowerCase().includes(name.toLowerCase()) ||
+            (w.keysecondary && w.keysecondary.toLowerCase().includes(name.toLowerCase()))
+        )
+    );
+
+    if (entry) {
+        return {
+            key: entry.key,
+            content: entry.content
+        };
+    }
+    return null;
+}
+
+// 用 AI 从文本中提取角色信息
+async function extractFromText(teammate, text, source) {
+    if (!settings.aiConfig || !settings.aiConfig.endpoint) {
+        console.log("[Nexus] 未配置 API，跳过档案提取");
+        return;
+    }
+
+    const systemPrompt = `你是一个角色信息提取助手。请从以下文本中提取角色「${teammate.name}」的信息。
+
+返回JSON格式（不要其他内容）：
+{
+  "traits": ["性格词1", "性格词2", "性格词3"],
+  "backstory": "50字内的简短经历描述"
+}
+
+如果信息不足，traits 可以少于3个，backstory 可以写"暂无详细记录"。`;
+
+    try {
+        const response = await callIndependentAI(systemPrompt, text.substring(0, 2000), []);
+
+        // 解析 JSON
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.traits && Array.isArray(parsed.traits)) {
+                teammate.traits = parsed.traits.slice(0, 5);
+            }
+            if (parsed.backstory) {
+                teammate.backstory = parsed.backstory.substring(0, 100);
+            }
+            saveSettingsDebounced();
+            console.log(`[Nexus] ${teammate.name} 档案已提取 (来源: ${source}):`, teammate.traits, teammate.backstory);
+            toastr.success(`已自动生成 ${teammate.name} 的角色档案`, "Infinite Nexus");
+        }
+    } catch (error) {
+        console.error("[Nexus] 档案提取失败:", error);
     }
 }
 
@@ -513,20 +844,31 @@ function addPendingRequest(name, reason) {
 }
 
 // 添加队友
-function addTeammate(name, source = "manual") {
+async function addTeammate(name, source = "manual") {
     if (!settings) return;
     if (settings.teammates.some(t => t.name === name)) return;
 
     const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
-    settings.teammates.push({
+    const newTeammate = {
         id: id,
         name: name,
-        source: source
-    });
+        source: source,
+        signature: getRandomSignature(),
+        // 档案字段
+        traits: [],           // 性格标签
+        backstory: "",        // 经历描述
+        notes: "",            // 用户备注
+        worldInfoKey: null    // 关联的 WorldInfo 条目
+    };
+
+    settings.teammates.push(newTeammate);
     settings.commsHistory[id] = [];
     saveSettingsDebounced();
     renderFriendList();
     console.log(`[Nexus] 添加队友: ${name} (${source})`);
+
+    // 异步提取角色档案
+    extractTeammateProfile(newTeammate);
 }
 
 // 更新好友申请徽章
@@ -580,23 +922,95 @@ function renderFriendList() {
     if (count) count.innerText = `(${settings.teammates.length})`;
 
     if (settings.teammates.length === 0) {
-        list.innerHTML = `<div style="color:#888; padding:8px; font-size:0.85em;">暂无好友</div>`;
+        list.innerHTML = `<div style="color:#888; padding:10px; font-size:0.9em;">暂无好友 (点击 [+]手动添加)</div>`;
         return;
     }
 
-    settings.teammates.forEach(teammate => {
-        const item = document.createElement('div');
-        item.className = 'nexus-friend-item';
-        if (settings.currentTeammate === teammate.id) {
-            item.classList.add('active');
+    settings.teammates.forEach(tm => {
+        const row = document.createElement('div');
+        row.className = 'nexus-friend-item';
+        if (settings.currentTeammate === tm.id) {
+            row.classList.add('active');
         }
-        item.innerHTML = `
-            <span>${teammate.name}</span>
-            <span style="font-size:0.7em; color:#888;">${teammate.source === 'request' ? '申请' : teammate.source === 'worldinfo' ? '剧情' : '手动'}</span>
+
+        // 确保有签名
+        if (!tm.signature) {
+            tm.signature = getRandomSignature();
+        }
+
+        row.innerHTML = `
+            <div class="nexus-friend-info" onclick="selectTeammate('${tm.id}')">
+                <div class="nexus-friend-name">${tm.name}</div>
+                <div class="nexus-friend-status">
+                    <span class="nexus-status-dot"></span>
+                    <span class="nexus-status-text">${tm.signature}</span>
+                </div>
+            </div>
+            <div class="nexus-friend-actions">
+                <span class="nexus-profile-btn" title="角色档案" onclick="infiniteNexus.openProfile('${tm.id}')">📋</span>
+                <span class="nexus-delete-btn" title="删除好友" onclick="infiniteNexus.deleteTeammate('${tm.id}')">×</span>
+            </div>
         `;
-        item.onclick = () => selectTeammate(teammate.id);
-        list.appendChild(item);
+        list.appendChild(row);
     });
+
+    // Auto-save any new signatures
+    saveSettingsDebounced();
+}
+
+// 删除好友
+function deleteTeammate(id) {
+    if (!settings) return;
+    if (!confirm("确定要删除这个好友吗？通讯记录也会被删除。")) return;
+
+    settings.teammates = settings.teammates.filter(t => t.id !== id);
+    delete settings.commsHistory[id];
+
+    if (settings.currentTeammate === id) {
+        settings.currentTeammate = null;
+        document.getElementById('nexus-current-chat-label').style.display = 'none';
+        document.getElementById('nexus-comms-log').innerHTML = '<div class="nexus-comms-placeholder">选择好友开始传音...</div>';
+        document.getElementById('nexus-comms-input').disabled = true;
+    }
+
+    saveSettingsDebounced();
+    renderFriendList();
+    toastr.info("已删除好友", "Infinite Nexus");
+}
+
+// 打开角色档案弹窗
+function openProfileModal(teammateId) {
+    const teammate = settings.teammates.find(t => t.id === teammateId);
+    if (!teammate) return;
+
+    document.getElementById('nexus-profile-name').value = teammate.name;
+    document.getElementById('nexus-profile-traits').value = (teammate.traits || []).join(', ');
+    document.getElementById('nexus-profile-backstory').value = teammate.backstory || '';
+    document.getElementById('nexus-profile-notes').value = teammate.notes || '';
+
+    // 显示来源信息
+    let sourceInfo = `来源: ${teammate.source === 'request' ? '好友申请' : teammate.source === 'worldinfo' ? '世界信息' : '手动添加'}`;
+    if (teammate.worldInfoKey) {
+        sourceInfo += ` | WorldInfo: ${teammate.worldInfoKey}`;
+    }
+    document.getElementById('nexus-profile-source').innerText = sourceInfo;
+
+    document.getElementById('nexus-profile-modal').style.display = 'block';
+}
+
+// 保存当前档案
+function saveCurrentProfile() {
+    const name = document.getElementById('nexus-profile-name').value;
+    const teammate = settings.teammates.find(t => t.name === name);
+    if (!teammate) return;
+
+    const traitsText = document.getElementById('nexus-profile-traits').value;
+    teammate.traits = traitsText.split(/[,，]/).map(s => s.trim()).filter(s => s);
+    teammate.backstory = document.getElementById('nexus-profile-backstory').value.trim();
+    teammate.notes = document.getElementById('nexus-profile-notes').value.trim();
+
+    saveSettingsDebounced();
+    toastr.success(`${teammate.name} 的档案已保存`, "Infinite Nexus");
 }
 
 // 选择队友进行聊天
@@ -896,7 +1310,13 @@ window.infiniteNexus = {
                 document.getElementById('nexus-request-modal').style.display = 'none';
             }
         }
-    }
+    },
+
+    // 删除好友
+    deleteTeammate: deleteTeammate,
+
+    // 打开角色档案
+    openProfile: openProfileModal
 };
 
 function parseSystemTags(text) {
@@ -1037,6 +1457,78 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+// ============ 主动消息系统 ============
+const PROACTIVE_PROMPTS = [
+    // 日常闲聊
+    "你想起了什么，主动联系玩家闲聊几句。",
+    "你发现了一些有趣的事情，想分享给玩家。",
+    "你有点无聊，想找玩家聊聊天。",
+    "你想确认一下玩家的状态。",
+    "你想提醒玩家注意安全。",
+    // 任务邀请
+    "你刚接到一个新任务，想邀请玩家组队一起完成。简短说明任务类型（如探索、战斗、调查等）。",
+    "系统给你推送了一个双人任务，你想问问玩家有没有兴趣一起接。",
+    "你听说有个高奖励的任务正在招募，想拉玩家一起报名。",
+    "你有一个还没完成的任务需要帮手，想问玩家能不能帮忙。",
+    // 情报分享
+    "你打听到一些关于当前副本的情报，想告诉玩家。",
+    "你想分享一些你发现的生存技巧。"
+];
+
+let lastProactiveCheck = Date.now();
+const PROACTIVE_INTERVAL = 30000; // 30秒检查一次
+const PROACTIVE_CHANCE = 0.05;    // 5% 触发概率
+
+async function triggerProactiveMessage() {
+    // 检查条件
+    if (!settings || !settings.aiConfig || !settings.aiConfig.endpoint) return;
+    if (!settings.teammates || settings.teammates.length === 0) return;
+
+    // 随机选择一个队友
+    const teammate = settings.teammates[Math.floor(Math.random() * settings.teammates.length)];
+    const prompt = PROACTIVE_PROMPTS[Math.floor(Math.random() * PROACTIVE_PROMPTS.length)];
+
+    const systemPrompt = `你现在扮演 Infinite Nexus 系统中的队友 "${teammate.name}"。
+${prompt}
+请以 "${teammate.name}" 的身份主动发一条消息给玩家。
+消息要简短自然（30字以内），像是朋友间的随意聊天。不要写动作描述。`;
+
+    try {
+        const message = await callIndependentAI(systemPrompt, "生成一条主动消息", []);
+
+        // 保存到历史
+        if (!settings.commsHistory[teammate.id]) {
+            settings.commsHistory[teammate.id] = [];
+        }
+        settings.commsHistory[teammate.id].push({ role: "assistant", content: message });
+        saveSettingsDebounced();
+
+        // 显示通知
+        toastr.info(`${teammate.name}: ${message}`, "📨 新传音", {
+            timeOut: 8000,
+            onclick: () => {
+                // 点击通知打开传音面板并选中该队友
+                document.getElementById('nexus-comms-modal').style.display = 'block';
+                selectTeammate(teammate.id);
+            }
+        });
+
+        console.log(`[Nexus] 主动消息已触发: ${teammate.name} - ${message}`);
+    } catch (error) {
+        console.error("[Nexus] 主动消息触发失败:", error);
+    }
+}
+
+// 主动消息检查定时器
+setInterval(() => {
+    if (Date.now() - lastProactiveCheck < PROACTIVE_INTERVAL) return;
+    lastProactiveCheck = Date.now();
+
+    if (Math.random() < PROACTIVE_CHANCE) {
+        triggerProactiveMessage();
+    }
+}, 10000); // 每10秒检查一次时间
 
 jQuery(document).ready(function () {
     const link = document.createElement('link');

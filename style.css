@@ -493,3 +493,205 @@
     max-height: 200px;
     overflow-y: auto;
 }
+
+/* API Config Modal */
+#nexus-config-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    max-width: 90vw;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 10000;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-config-row {
+    margin-bottom: 10px;
+}
+
+.nexus-config-row label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.nexus-config-row input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.nexus-config-btn {
+    cursor: pointer;
+    font-size: 1.2em;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.nexus-config-btn:hover {
+    opacity: 1;
+}
+
+/* Primary Button Style */
+.nexus-btn-primary {
+    background: var(--nexus-accent-blue);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.nexus-btn-primary:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* 好友列表样式优化 */
+.nexus-friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    background: rgba(255, 255, 255, 0.5);
+    transition: background 0.2s;
+}
+
+.nexus-friend-item:last-child {
+    border-bottom: none;
+}
+
+.nexus-friend-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.nexus-friend-item.active {
+    background: rgba(var(--nexus-accent-blue-rgb), 0.1);
+    border-left: 3px solid var(--nexus-accent-blue);
+}
+
+.nexus-friend-info {
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+.nexus-friend-name {
+    font-weight: bold;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.nexus-friend-status {
+    font-size: 0.8em;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nexus-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4a4;
+    /* Online green */
+    display: inline-block;
+}
+
+.nexus-friend-actions {
+    margin-left: 10px;
+}
+
+.nexus-delete-btn {
+    color: #ccc;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+
+.nexus-delete-btn:hover {
+    color: var(--nexus-accent-red);
+}
+
+/* Profile Button */
+.nexus-profile-btn {
+    cursor: pointer;
+    font-size: 0.9em;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.nexus-profile-btn:hover {
+    opacity: 1;
+}
+
+/* Profile Modal */
+#nexus-profile-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--nexus-bg);
+    border: 2px solid var(--nexus-border);
+    z-index: 10001;
+    padding: 15px;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    font-family: var(--nexus-font);
+}
+
+.nexus-profile-header {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--nexus-border);
+    font-size: 1.1em;
+}
+
+.nexus-profile-content textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.nexus-profile-info {
+    font-size: 0.8em;
+    color: #888;
+    padding: 8px 0;
+    border-top: 1px dashed #ddd;
+    margin-top: 10px;
+}
+
+/* Secondary Button */
+.nexus-btn-secondary {
+    background: #eee;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.nexus-btn-secondary:hover {
+    background: #ddd;
+}
