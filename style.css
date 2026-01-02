@@ -732,3 +732,155 @@
     box-sizing: border-box;
     font-family: inherit;
 }
+
+/* Item Display */
+.nexus-item {
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 2px 8px;
+    margin: 0 5px 4px 0;
+    font-size: 0.85em;
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+}
+
+.nexus-item:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+.nexus-item-count {
+    color: var(--nexus-accent-red);
+    font-weight: bold;
+    margin-left: 3px;
+}
+
+/* Context Menu */
+.nexus-context-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 10002;
+    min-width: 80px;
+}
+
+.nexus-menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.nexus-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.nexus-menu-danger:hover {
+    background: #fee;
+    color: var(--nexus-accent-red);
+}
+
+/* Clear Modal (通关结算) */
+#nexus-clear-modal,
+#nexus-new-dungeon-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2e 100%);
+    color: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10003;
+    min-width: 280px;
+    text-align: center;
+}
+
+.nexus-clear-header {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    background: linear-gradient(90deg, #ffd700, #ffaa00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nexus-clear-title {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: #ccc;
+}
+
+.nexus-clear-stats {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.nexus-clear-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nexus-clear-row:last-child {
+    border-bottom: none;
+}
+
+.nexus-clear-karma {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.nexus-clear-actions {
+    margin-top: 10px;
+}
+
+/* New Dungeon Options */
+.nexus-dungeon-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.nexus-dungeon-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 100px;
+}
+
+.nexus-dungeon-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #4a9eff;
+    transform: translateY(-3px);
+}
+
+.nexus-dungeon-pink:hover {
+    border-color: #ff69b4;
+}
+
+.nexus-dungeon-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+
+.nexus-dungeon-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.nexus-dungeon-desc {
+    font-size: 0.75em;
+    color: #999;
+}
