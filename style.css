@@ -341,3 +341,118 @@
         font-size: 1.2em;
     }
 }
+
+/* ============ 好友系统样式 ============ */
+
+/* 好友申请通知徽章 */
+.nexus-request-badge {
+    cursor: pointer;
+    animation: pulse 1s infinite;
+    font-size: 1.1em;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* 申请列表项 */
+.nexus-request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 8px;
+    border-bottom: 1px dashed #ccc;
+}
+
+.nexus-request-item:last-child {
+    border-bottom: none;
+}
+
+/* 好友区域 */
+.nexus-friend-section {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.nexus-friend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #f0ebe0;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.nexus-friend-header:hover {
+    background: #e8e3d8;
+}
+
+.nexus-friend-list {
+    max-height: 120px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.nexus-friend-list.collapsed {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.nexus-friend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+
+.nexus-friend-item:hover {
+    background: #f5f0e5;
+}
+
+.nexus-friend-item.active {
+    background: #e8e3d8;
+    border-left: 3px solid var(--nexus-accent-red);
+}
+
+/* 当前聊天标签 */
+.nexus-current-chat-label {
+    padding: 8px;
+    font-size: 0.85em;
+    color: var(--nexus-accent-blue);
+    border-bottom: 1px solid #ccc;
+}
+
+/* 聊天占位符 */
+.nexus-comms-placeholder {
+    color: #888;
+    font-size: 0.9em;
+    text-align: center;
+    padding: 20px;
+}
+
+/* 添加按钮 */
+.nexus-add-btn {
+    cursor: pointer;
+    color: var(--nexus-accent-blue);
+    font-weight: bold;
+}
+
+.nexus-add-btn:hover {
+    color: var(--nexus-accent-red);
+}
+
+/* 通讯弹窗头部 */
+.nexus-comms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ccc;
+    font-weight: bold;
+}
