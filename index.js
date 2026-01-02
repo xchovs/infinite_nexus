@@ -85,57 +85,77 @@ function createOverlay() {
 
     overlay.innerHTML = `
         <div class="nexus-comms-btn" id="nexus-comms-open" title="队友传音"></div>
-        <div class="nexus-header" id="nexus-header-bar">
-            <span>无限终端</span>
-            <span class="nexus-toggle-btn" id="nexus-toggle-btn"></span>
+        <div class="nexus-header" id="nexus-header-bar" title="点击收起/展开" onclick="event.stopPropagation(); toggleMinimize();">
+            <span id="nexus-time">DAY 01</span>
         </div>
         <div class="nexus-content" id="nexus-body">
-            <div class="nexus-section">
-                <div class="nexus-section-title">状态</div>
+            <!-- Compact Stats Dashboard -->
+            <div class="nexus-section" style="margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;">
                 <div class="nexus-stat-row">
-                    <span>HP</span>
-                    <div class="nexus-bar"><div class="nexus-bar-fill nexus-hp-bar" id="nexus-hp-bar"></div></div>
-                    <span id="nexus-hp-text">100/100</span>
+                    <span style="width:35px; font-weight:bold;">HP</span>
+                    <div class="nexus-bar-container"><div class="nexus-bar-fill nexus-hp-fill" id="nexus-hp-bar"></div></div>
+                    <span id="nexus-hp-text" style="width:60px; text-align:right;">100/100</span>
                 </div>
                 <div class="nexus-stat-row">
-                    <span>SAN</span>
-                    <div class="nexus-bar"><div class="nexus-bar-fill nexus-san-bar" id="nexus-san-bar"></div></div>
-                    <span id="nexus-san-text">100/100</span>
+                    <span style="width:35px; font-weight:bold;">SAN</span>
+                    <div class="nexus-bar-container"><div class="nexus-bar-fill nexus-san-fill" id="nexus-san-bar"></div></div>
+                    <span id="nexus-san-text" style="width:60px; text-align:right;">100/100</span>
                 </div>
-                <div class="nexus-stat-row">
-                    <span>Karma</span>
-                    <span id="nexus-karma-text" style="margin-left:auto;">0</span>
+                <div class="nexus-stat-row" style="justify-content:flex-end; margin-top:5px;">
+                    <span style="margin-right:5px; font-weight:bold; color:#555;">Karma:</span>
+                    <span id="nexus-karma-text" style="font-weight:bold; color:var(--nexus-accent-red);">0</span>
                 </div>
             </div>
+
+            <!-- Mission Area -->
             <div class="nexus-section">
-                <div class="nexus-section-title">当前任务</div>
-                <div id="nexus-mission" class="nexus-mission-text">存活并寻找线索...</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; font-size:0.9em; color:#888;">
+                    <span>当前任务</span>
+                    <span id="nexus-switch-dungeon-btn" class="nexus-btn-small" title="切换副本/世界" style="cursor:pointer;">[切换]</span>
+                </div>
+                <div id="nexus-mission" class="nexus-mission-box" style="margin:0;">存活并寻找线索...</div>
             </div>
-            <div class="nexus-section">
-                <div class="nexus-section-title">时间</div>
-                <div id="nexus-time">D-01</div>
-            </div>
+
             <div class="nexus-section">
                 <div class="nexus-section-title">技能 <span id="nexus-add-skill-btn" class="nexus-add-btn">+</span></div>
-                <div id="nexus-skill-list"></div>
-                <button id="nexus-universal-dice" class="nexus-dice-btn"> 通用骰</button>
+                <div id="nexus-skill-list" class="nexus-skill-grid"></div>
+                <button id="nexus-universal-dice" class="nexus-dice-btn" style="width:100%; margin-top:10px;">🎲 通用检定</button>
             </div>
             <div class="nexus-section">
-                <div class="nexus-section-title">物品</div>
+                <div class="nexus-section-title">物品 <span id="nexus-add-item-btn" class="nexus-add-btn" title="手动补录">+</span></div>
                 <div id="nexus-inventory-list" class="nexus-inventory-grid"></div>
             </div>
-            <div class="nexus-section">
-                <button id="nexus-shop-open" class="nexus-shop-btn">Karma 商店</button>
+            <div class="nexus-section" style="display:flex; gap:10px;">
+                <button id="nexus-shop-open" class="nexus-btn-small" style="flex:1;">商店</button>
+                <!-- Reserved for future buttons -->
+                <div style="flex:1;"></div>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
 
+    // Restore from Seal (Minimized)
+    overlay.addEventListener('click', (e) => {
+        // Only trigger if minimized AND clicking the main overlay container (or ghost button)
+        // But if we are NOT minimized, we want the HEADER to handle the minimize toggle.
+        if (overlay.classList.contains('minimized')) {
+            toggleMinimize();
+        }
+    });
+
+    // Event listener for header removed in favor of inline onclick for stability
+    // Minimize logic is handled by toggleMinimize() globally
+
+
+
+    const addItemBtn = document.getElementById('nexus-add-item-btn');
+    if (addItemBtn) addItemBtn.addEventListener('click', manualAddItem);
+
     // Shop Modal
     const shopModal = document.createElement('div');
     shopModal.id = 'nexus-shop-modal';
     shopModal.innerHTML = `
-        <h3 style="margin:0 0 10px;">Karma 商店 <span id="nexus-shop-close-x" style="float:right; cursor:pointer;"></span></h3>
+        <h3 class="nexus-modal-header">Karma 商店 <span id="nexus-shop-close-x" style="float:right; cursor:pointer;">✕</span></h3>
         <div id="nexus-shop-list"></div>
     `;
     document.body.appendChild(shopModal);
@@ -146,30 +166,32 @@ function createOverlay() {
     commsModal.innerHTML = `
         <div class="nexus-comms-header">
             <span>队友传音</span>
-            <span id="nexus-comms-close" style="cursor:pointer;"></span>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span id="nexus-config-btn" class="nexus-config-icon" title="API 设置" style="cursor:pointer; font-size:14px;">⚙️</span>
+                <span id="nexus-comms-close" style="cursor:pointer;">✕</span>
+            </div>
         </div>
         <div class="nexus-comms-body">
             <div class="nexus-friend-panel">
-                <div class="nexus-friend-header">
-                    好友列表
-                    <span id="nexus-add-friend-btn" class="nexus-add-btn" title="手动添加好友">+</span>
-                    <span id="nexus-request-btn" class="nexus-request-badge" title="好友申请">0</span>
+                <div class="nexus-friend-header" style="justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:var(--nexus-gold);">好友列表</span>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span id="nexus-add-friend-btn" class="nexus-btn-small" title="手动添加好友">添加</span>
+                        <span id="nexus-request-btn" class="nexus-btn-small" title="好友申请">申请 <span id="nexus-req-count">0</span></span>
+                    </div>
                 </div>
                 <div id="nexus-friend-list" class="nexus-friend-list"></div>
             </div>
             <div class="nexus-chat-panel">
                 <div id="nexus-current-chat-label" class="nexus-chat-label" style="display:none;">
                     正在与 <span id="nexus-chat-name"></span> 传音
-                    <span id="nexus-clear-history-btn" class="nexus-clear-btn" title="清空记录"></span>
+                    <span id="nexus-clear-history-btn" class="nexus-clear-btn" title="清空记录">🗑️</span>
                 </div>
                 <div id="nexus-comms-log" class="nexus-comms-log">
                     <div class="nexus-comms-placeholder">选择好友开始传音...</div>
                 </div>
                 <input type="text" id="nexus-comms-input" class="nexus-comms-input" placeholder="选择好友后发送传音..." disabled>
             </div>
-        </div>
-        <div class="nexus-comms-footer">
-            <span id="nexus-config-btn" class="nexus-config-icon" title="API 设置"></span>
         </div>
     `;
     document.body.appendChild(commsModal);
@@ -178,9 +200,9 @@ function createOverlay() {
     const requestModal = document.createElement('div');
     requestModal.id = 'nexus-request-modal';
     requestModal.innerHTML = `
-        <h3 style="border-bottom:1px dashed #ccc; margin-bottom:10px; padding-bottom:5px;">
+        <h3 class="nexus-modal-header">
             好友申请
-            <span style="float:right; cursor:pointer;" id="nexus-request-close"></span>
+            <span style="float:right; cursor:pointer;" id="nexus-request-close">✕</span>
         </h3>
         <div id="nexus-request-list"></div>
     `;
@@ -190,9 +212,9 @@ function createOverlay() {
     const configModal = document.createElement('div');
     configModal.id = 'nexus-config-modal';
     configModal.innerHTML = `
-        <h3 style="border-bottom:1px dashed #ccc; margin-bottom:10px; padding-bottom:5px;">
+        <h3 class="nexus-modal-header">
             独立 API 设置
-            <span style="float:right; cursor:pointer;" id="nexus-config-close"></span>
+            <span style="float:right; cursor:pointer;" id="nexus-config-close">✕</span>
         </h3>
         <div class="nexus-config-row">
             <label>API Endpoint (Base URL)</label>
@@ -208,6 +230,13 @@ function createOverlay() {
                 <option value="">-- 先获取模型列表 --</option>
             </select>
         </div>
+        <div class="nexus-config-row" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
+            <label style="display:flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="nexus-immersive-mode" style="width:auto; margin-right:8px;"> 
+                <span>开启沉浸模式 (AI 自动判断物品获取)</span>
+            </label>
+            <div style="font-size:0.8em; color:#666; margin-left:20px;">* 将每条回复发送给 AI 分析是否获得物品，消耗 Token。</div>
+        </div>
         <div style="text-align:right; margin-top:15px;">
             <button id="nexus-config-save" class="nexus-btn-primary">保存设置</button>
         </div>
@@ -218,9 +247,9 @@ function createOverlay() {
     const profileModal = document.createElement('div');
     profileModal.id = 'nexus-profile-modal';
     profileModal.innerHTML = `
-        <h3 class="nexus-profile-header">
+        <h3 class="nexus-modal-header">
             角色档案
-            <span style="float:right; cursor:pointer;" id="nexus-profile-close"></span>
+            <span style="float:right; cursor:pointer;" id="nexus-profile-close">✕</span>
         </h3>
         <div class="nexus-profile-content">
             <div class="nexus-config-row">
@@ -265,7 +294,7 @@ function createOverlay() {
             <div class="nexus-clear-row nexus-clear-karma"><span> 获得Karma:</span><span id="nexus-clear-karma"></span></div>
         </div>
         <div class="nexus-clear-actions">
-            <button id="nexus-start-new-dungeon" class="nexus-btn-primary">开始新副本</button>
+            <button id="nexus-start-new-dungeon" class="nexus-btn-primary">确定</button>
         </div>
     `;
     document.body.appendChild(clearModal);
@@ -294,18 +323,47 @@ function createOverlay() {
     document.body.appendChild(newDungeonModal);
 
     // Event Bindings
+    const switchBtn = document.getElementById('nexus-switch-dungeon-btn');
+    if (switchBtn) switchBtn.addEventListener('click', () => {
+        document.getElementById('nexus-new-dungeon-modal').style.display = 'block';
+    });
+
+    const clearConfirmBtn = document.getElementById('nexus-start-new-dungeon');
+    if (clearConfirmBtn) {
+        clearConfirmBtn.addEventListener('click', () => {
+            document.getElementById('nexus-clear-modal').style.display = 'none';
+        });
+    }
+
+    const cancelBtn = document.getElementById('nexus-dungeon-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => {
+        document.getElementById('nexus-new-dungeon-modal').style.display = 'none';
+    });
+
     document.getElementById('nexus-add-skill-btn').addEventListener('click', manualAddSkill);
     document.getElementById('nexus-universal-dice').addEventListener('click', () => performSkillCheck("运气", 50, true));
     document.getElementById('nexus-shop-open').addEventListener('click', () => { renderShopItems(); shopModal.style.display = 'block'; });
     document.getElementById('nexus-shop-close-x').addEventListener('click', () => { shopModal.style.display = 'none'; });
-    document.getElementById('nexus-comms-open').addEventListener('click', () => {
+    document.getElementById('nexus-comms-open').addEventListener('click', (e) => {
+        e.stopPropagation(); // 防止事件冒泡到 overlay
+
+        // 自动收起主界面
+        const overlay = document.getElementById('infinite-nexus-overlay');
+        if (overlay && !overlay.classList.contains('minimized')) {
+            overlay.classList.add('minimized');
+            nexusState.isMinimized = true;
+            saveSettingsDebounced();
+        }
+
         commsModal.style.display = 'block';
         renderFriendList();
         updateRequestBadge();
         if (settings.currentTeammate) renderCommsLog(settings.currentTeammate);
     });
     document.getElementById('nexus-comms-close').addEventListener('click', () => { commsModal.style.display = 'none'; });
-    document.getElementById('nexus-toggle-btn').addEventListener('click', toggleMinimize);
+    // Header click listener is now inline in HTML for simplicity, or we can add it here if inline is not preferred.
+    // But since we rely on `toggleMinimize` which is global, inline `onclick` is fine for now, or we can bind it:
+    // document.getElementById('nexus-header-bar').addEventListener('click', toggleMinimize);
 
     document.getElementById('nexus-comms-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendCommsMessage();
@@ -340,6 +398,8 @@ function createOverlay() {
                 }
                 modelSelect.value = settings.aiConfig.model;
             }
+            const immersiveCb = document.getElementById('nexus-immersive-mode');
+            if (immersiveCb) immersiveCb.checked = !!settings.immersiveMode;
         }
         configModal.style.display = 'block';
     });
@@ -386,6 +446,8 @@ function createOverlay() {
             apiKey: document.getElementById('nexus-api-key').value.trim(),
             model: document.getElementById('nexus-api-model').value
         };
+        const immersiveCb = document.getElementById('nexus-immersive-mode');
+        if (immersiveCb) settings.immersiveMode = immersiveCb.checked;
         saveSettingsDebounced();
         toastr.success("API 设置已保存", "Infinite Nexus");
         configModal.style.display = 'none';
@@ -405,10 +467,7 @@ function createOverlay() {
     });
 
     // Clear modal bindings
-    document.getElementById('nexus-start-new-dungeon').addEventListener('click', () => {
-        clearModal.style.display = 'none';
-        newDungeonModal.style.display = 'block';
-    });
+
     document.getElementById('nexus-dungeon-normal').addEventListener('click', () => {
         startNewDungeon('normal');
         newDungeonModal.style.display = 'none';
@@ -431,6 +490,10 @@ function createOverlay() {
     settings = initSettings();
     loadTeammatesFromWorldInfo();
     if (window.innerWidth < 600) toggleMinimize();
+
+    // 好友列表可拖拽（使用专用函数，不触发 toggleMinimize）
+    const commsHeader = commsModal.querySelector('.nexus-comms-header');
+    if (commsHeader) makeModalDraggable(commsModal, commsHeader);
 }
 
 function makeDraggable(element, handle) {
@@ -460,15 +523,80 @@ function makeDraggable(element, handle) {
     });
 }
 
+// 专用于 Modal 的拖拽函数（无点击最小化逻辑）
+function makeModalDraggable(element, handle) {
+    let isDragging = false, startX, startY, startLeft, startTop;
+    let initialized = false;
+
+    handle.style.cursor = 'move';
+
+    handle.addEventListener('mousedown', (e) => {
+        // 忽略关闭按钮等子元素
+        if (e.target.tagName === 'SPAN' && e.target.style.cursor === 'pointer') return;
+        if (e.target.id && e.target.id.includes('close')) return;
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        // 第一次拖拽时，清除 transform 并设置绝对像素位置
+        const rect = element.getBoundingClientRect();
+        if (!initialized) {
+            element.style.transform = 'none';
+            element.style.left = rect.left + 'px';
+            element.style.top = rect.top + 'px';
+            initialized = true;
+        }
+
+        startLeft = parseInt(element.style.left) || rect.left;
+        startTop = parseInt(element.style.top) || rect.top;
+
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        let newTop = startTop + dy;
+        // 防止拖到屏幕顶部以上
+        if (newTop < 0) newTop = 0;
+
+        element.style.left = (startLeft + dx) + 'px';
+        element.style.top = newTop + 'px';
+        element.style.right = 'auto';
+        element.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+}
+
 function toggleMinimize() {
-    nexusState.isMinimized = !nexusState.isMinimized;
-    const body = document.getElementById('nexus-body');
-    const btn = document.getElementById('nexus-toggle-btn');
-    if (nexusState.isMinimized) {
-        body.style.display = 'none'; btn.innerText = '+';
-    } else {
-        body.style.display = 'block'; btn.innerText = '';
+    const overlay = document.getElementById('infinite-nexus-overlay');
+    if (!overlay) return;
+
+    // Anchor Right: 记录当前右边缘位置
+    const rect = overlay.getBoundingClientRect();
+    const currentRight = rect.right;
+    const isMinimizing = !overlay.classList.contains('minimized');
+
+    overlay.classList.toggle('minimized');
+    const nowMinimized = overlay.classList.contains('minimized');
+    nexusState.isMinimized = nowMinimized;
+
+    // 如果手动拖拽过（有 left 样式），需要调整 left 保持右边缘固定
+    if (overlay.style.left && overlay.style.left !== 'auto') {
+        const targetWidth = nowMinimized ? 44 : 340;
+        const newLeft = currentRight - targetWidth;
+        overlay.style.left = newLeft + 'px';
+        overlay.style.right = 'auto';
     }
+
+    // Save state
+    saveSettingsDebounced();
 }
 
 function updateUI() {
@@ -721,12 +849,18 @@ function addTeammate(name, source) {
 
 function updateRequestBadge() {
     if (!settings) return;
-    const badge = document.getElementById('nexus-request-badge');
     const btn = document.getElementById('nexus-request-btn');
-    if (badge) badge.innerText = settings.pendingRequests.length;
     if (btn) {
-        btn.innerText = settings.pendingRequests.length;
-        btn.style.display = settings.pendingRequests.length > 0 ? 'inline-block' : 'none';
+        const count = settings.pendingRequests.length;
+        btn.innerHTML = `申请 <span id="nexus-req-count">${count}</span>`;
+        if (count > 0) {
+            btn.style.color = '#ffdb74';
+            btn.style.borderColor = '#ffdb74';
+        } else {
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }
+        btn.style.display = 'inline-block';
     }
 }
 
@@ -735,14 +869,14 @@ function renderSkills() {
     if (!list) return;
     list.innerHTML = "";
     nexusState.skills.forEach(skill => {
-        const row = document.createElement('div');
-        row.className = 'nexus-skill-row';
-        row.innerHTML = `
-            <span style="flex:1;">${skill.name}</span>
-            <span style="width:30px; text-align:center;">${skill.value}</span>
-            <button class="nexus-skill-dice" onclick="infiniteNexus.rollSkill('${skill.name}', ${skill.value})"></button>
+        const div = document.createElement('div');
+        div.className = 'nexus-skill-tag';
+        div.title = "点击进行技能检定";
+        div.onclick = () => infiniteNexus.rollSkill(skill.name, skill.value);
+        div.innerHTML = `
+            ${skill.name} <span class="nexus-skill-val-tag">${skill.value}</span>
         `;
-        list.appendChild(row);
+        list.appendChild(div);
     });
 }
 
@@ -755,12 +889,11 @@ function performSkillCheck(skillName, skillValue, isUniversal = false) {
     else if (roll >= 96) { result = "大失败!"; color = "#F44336"; }
     else { result = "失败"; color = "#FF9800"; }
     toastr.info(`[${skillName}]  ${roll} / ${skillValue}  <span style="color:${color}; font-weight:bold;">${result}</span>`, "技能检定", { escapeHtml: false });
-    const textarea = document.querySelector('#send_textarea');
-    if (textarea) {
-        const prefix = textarea.value ? "\n" : "";
-        textarea.value += prefix + `[检定: ${skillName} ${roll}/${skillValue} ${result}]`;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+
+    // Hidden Injection: Store result to be appended to next message
+    if (!settings.pendingDice) settings.pendingDice = [];
+    settings.pendingDice.push(`[系统检定: ${skillName} ${roll}/${skillValue} ${result}]`);
+    saveSettingsDebounced();
 }
 
 function renderInventory() {
@@ -777,10 +910,10 @@ function renderInventory() {
     nexusState.inventory.forEach(item => {
         const div = document.createElement('div');
         div.className = 'nexus-item';
-        div.title = item.consumable ? '消耗品 (右键操作)' : '物品 (右键丢弃)';
-        const countBadge = item.count > 1 ? `<span class="nexus-item-count">${item.count}</span>` : '';
+        div.title = item.consumable ? '消耗品 (点击使用)' : '物品 (点击无限使用/丢弃)';
+        const countBadge = `<span class="nexus-item-count" style="margin-left:5px; color:#888; font-size:0.9em;">x${item.count}</span>`;
         div.innerHTML = `${item.name}${countBadge}`;
-        div.oncontextmenu = (e) => { e.preventDefault(); showItemContextMenu(e.pageX, e.pageY, item.name, item.consumable); };
+        div.onclick = (e) => { e.preventDefault(); showItemContextMenu(e.pageX, e.pageY, item.name, item.consumable); };
         list.appendChild(div);
     });
 }
@@ -794,7 +927,7 @@ function showItemContextMenu(x, y, itemName, isConsumable) {
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
     menu.innerHTML = `
-        ${isConsumable ? `<div class="nexus-menu-item" onclick="infiniteNexus.useItem('${itemName}')">使用</div>` : ''}
+        <div class="nexus-menu-item" onclick="infiniteNexus.useItem('${itemName}')">使用</div>
         <div class="nexus-menu-item nexus-menu-danger" onclick="infiniteNexus.dropItem('${itemName}')">丢弃</div>
     `;
     document.body.appendChild(menu);
@@ -845,18 +978,68 @@ function startNewDungeon(type) {
     nexusState.san = nexusState.maxSan;
     nexusState.time = "D-01";
     const textarea = document.querySelector('#send_textarea');
+
+    const normalPrompt = `[Infinite Nexus 副本开始]
+你和{{char}}突然被一股神秘力量拉入了"无限流"副本世界。
+
+【角色设定】请随机决定：
+- {{char}}是第一次被拉入副本的"新人"（惊慌、不解），还是已经历过多次副本的"老人"（冷静、有经验）
+- {{user}}同理，也随机决定是新人还是老人
+- 两人可以是一起被传送，或在副本中偶遇
+
+【开场描写要求】
+1. 描述被传送的瞬间感受（白光/眩晕/意识模糊）
+2. 描述副本环境：危险程度、氛围、规则提示
+3. 描写{{char}}和{{user}}的初次反应，体现他们是新人还是老人
+4. 给出初始任务提示
+
+【末尾输出系统标签】
+[任务: 副本主线任务] [时间: D-01]
+
+【后续剧情中】
+- 受伤输出 [HP -数值]
+- 精神冲击输出 [SAN -数值]  
+- 获得物品输出 [物品: 物品名]
+- 技能检定输出 [技能: 技能名 数值]
+
+请开始描述副本开场：`;
+
+    const pinkPrompt = `[Infinite Nexus 粉红团副本]
+你和{{char}}突然被一股暧昧的力量拉入了"无限流"的特殊副本——粉红团。
+
+【角色设定】请随机决定：
+- {{char}}是第一次经历这种副本的"纯情新人"，还是见多识广的"老司机"
+- {{user}}同理，随机决定经验程度
+- 两人的相遇可以是意外，也可以是命运安排
+
+【开场描写要求】
+1. 描述被传送的瞬间感受（身体发热、意识朦胧）
+2. 描述副本环境：暧昧氛围、诱惑元素、危险与情欲交织
+3. 描写{{char}}的反应，体现其性格和经验程度
+4. 给出带有暗示性的任务提示
+
+【末尾输出系统标签】
+[任务: 副本任务] [时间: D-01]
+
+【后续剧情中适时输出】
+[HP] [SAN] [物品] 等标签
+
+请开始描述粉红团开场 (R18)：`;
+
     if (type === 'normal') {
         nexusState.mission = "新副本：存活并探索...";
         toastr.info("开始普通副本", "Infinite Nexus");
         if (textarea) {
-            textarea.value = "[系统: 玩家进入新的普通副本，请描述副本设定和开场场景]";
+            textarea.value = normalPrompt;
+            textarea.style.setProperty('color', '#b85450', 'important');
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
     } else if (type === 'pink') {
         nexusState.mission = "粉红团：享受特殊剧情...";
         toastr.info("开始粉红团", "Infinite Nexus");
         if (textarea) {
-            textarea.value = "[系统: 玩家进入粉红团副本 (R18)，请描述成人向副本设定和开场场景]";
+            textarea.value = pinkPrompt;
+            textarea.style.setProperty('color', '#b85450', 'important');
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
@@ -866,7 +1049,7 @@ function startNewDungeon(type) {
 function manualAddSkill() {
     const name = prompt("输入技能名称", "");
     if (!name) return;
-    const val = prompt(`输入数值 (0-100)`, "50");
+    const val = prompt(`输入数值(0 - 100)`, "50");
     if (!val) return;
     addOrUpdateSkill(name, parseInt(val));
 }
@@ -878,14 +1061,31 @@ function addOrUpdateSkill(name, val) {
     renderSkills();
 }
 
+function manualAddItem() {
+    const name = prompt("请输入物品名称:");
+    if (!name) return;
+    const countStr = prompt("请输入数量:", "1");
+    const count = parseInt(countStr);
+    if (!isNaN(count) && count > 0) {
+        addItem(name, count);
+    }
+}
+
 function addItem(itemName, count = 1, consumable = false) {
     if (nexusState.inventory.length > 0 && typeof nexusState.inventory[0] === 'string') {
         nexusState.inventory = nexusState.inventory.map(name => ({ name, count: 1, consumable: false }));
+    }
+    // Auto-detect consumable
+    if (!consumable) {
+        if (/[药剂丸丹水茶酒食肉包卷]|Potion|Elixir|Food|Meat|Scroll|Box|Pack/i.test(itemName)) {
+            consumable = true;
+        }
     }
     const existing = nexusState.inventory.find(item => item.name === itemName);
     if (existing) { existing.count += count; }
     else { nexusState.inventory.push({ name: itemName, count: count, consumable: consumable }); }
     renderInventory();
+    toastr.success(`获得物品: ${itemName} x${count} `, "Infinite Nexus");
 }
 
 function useItem(itemName) {
@@ -893,11 +1093,11 @@ function useItem(itemName) {
     if (!item) return;
     if (item.consumable) {
         item.count -= 1;
-        toastr.success(`使用了 ${itemName}`, "Infinite Nexus");
+        toastr.success(`消耗使用了 ${itemName} (剩余: ${item.count})`, "Infinite Nexus");
         if (item.count <= 0) nexusState.inventory = nexusState.inventory.filter(i => i.name !== itemName);
         renderInventory();
     } else {
-        toastr.info(`${itemName} 不是消耗品`, "Infinite Nexus");
+        toastr.info(`使用了 ${itemName} (不消耗)`, "Infinite Nexus");
     }
 }
 
@@ -906,7 +1106,7 @@ function dropItem(itemName, amount = 1) {
     if (!item) return;
     item.count -= amount;
     if (item.count <= 0) nexusState.inventory = nexusState.inventory.filter(i => i.name !== itemName);
-    toastr.warning(`丢弃了 ${itemName}`, "Infinite Nexus");
+    toastr.warning(`丢弃了 ${itemName} `, "Infinite Nexus");
     renderInventory();
 }
 
@@ -932,13 +1132,13 @@ function renderRequestList() {
         const div = document.createElement('div');
         div.className = 'nexus-request-item';
         div.innerHTML = `
-            <div><strong>${req.name}</strong></div>
+        < div > <strong>${req.name}</strong></div >
             <div style="font-size:0.8em; color:#666;">${req.reason}</div>
             <div style="margin-top:5px;">
                 <button class="nexus-btn-primary" onclick="infiniteNexus.acceptRequest(${idx})">接受</button>
                 <button class="nexus-btn-secondary" onclick="infiniteNexus.rejectRequest(${idx})">拒绝</button>
             </div>
-        `;
+    `;
         list.appendChild(div);
     });
 }
@@ -968,11 +1168,12 @@ function renderCommsLog(teammateId) {
     }
     history.forEach(msg => {
         const entry = document.createElement('div');
-        entry.style.marginBottom = "5px";
+        entry.style.marginBottom = "8px"; // Increased spacing
         if (msg.role === 'user') {
-            entry.innerHTML = `<span class="nexus-msg-user">你:</span> ${msg.content}`;
+            entry.innerHTML = `<span class="nexus-msg-user">你:</span> <span class="nexus-msg-content">${msg.content}</span>`;
         } else {
-            entry.innerHTML = `<span style="color:var(--nexus-accent-red); font-weight:bold;">${teammate ? teammate.name : '队友'}:</span> ${msg.content}`;
+            // Removed hardcoded red
+            entry.innerHTML = `<span class="nexus-msg-sender">${teammate ? teammate.name : '队友'}:</span> <span class="nexus-msg-content">${msg.content}</span>`;
         }
         log.appendChild(entry);
     });
@@ -993,12 +1194,12 @@ function renderFriendList() {
         div.className = 'nexus-friend-item' + (settings.currentTeammate === t.id ? ' active' : '');
         div.innerHTML = `
             <div style="flex:1; cursor:pointer;" onclick="selectTeammate('${t.id}')">
-                <div class="nexus-friend-name">${t.name}</div>
-                <div class="nexus-friend-sig">${t.signature}</div>
+                <span class="nexus-friend-name" style="font-weight:bold; color:var(--nexus-gold-bright);">${t.name}</span>
+                <span class="nexus-friend-sig" style="color:var(--nexus-text-sub); font-size:0.75em; margin-left:8px;">${t.signature}</span>
             </div>
-            <div class="nexus-friend-actions">
-                <span class="nexus-action-btn" onclick="infiniteNexus.openProfile('${t.id}')" title="档案"></span>
-                <span class="nexus-action-btn" onclick="infiniteNexus.deleteTeammate('${t.id}')" title="删除"></span>
+            <div class="nexus-friend-actions" style="display:flex; gap:3px;">
+                <span class="nexus-btn-mini" onclick="infiniteNexus.openProfile('${t.id}')" title="档案">档</span>
+                <span class="nexus-btn-mini nexus-btn-danger" onclick="infiniteNexus.deleteTeammate('${t.id}')" title="删除">删</span>
             </div>
         `;
         list.appendChild(div);
@@ -1021,7 +1222,7 @@ function deleteTeammate(teammateId) {
     }
     saveSettingsDebounced();
     renderFriendList();
-    toastr.warning(`已删除好友: ${teammate.name}`);
+    toastr.warning(`已删除好友: ${teammate.name} `);
 }
 
 function openProfileModal(teammateId) {
@@ -1032,7 +1233,7 @@ function openProfileModal(teammateId) {
     document.getElementById('nexus-profile-backstory').value = teammate.backstory || '';
     document.getElementById('nexus-profile-notes').value = teammate.notes || '';
     document.getElementById('nexus-profile-inparty').checked = teammate.inParty || false;
-    document.getElementById('nexus-profile-source').innerText = `来源: ${teammate.source || 'unknown'}` + (teammate.worldInfoKey ? ` | WorldInfo: ${teammate.worldInfoKey}` : '');
+    document.getElementById('nexus-profile-source').innerText = `来源: ${teammate.source || 'unknown'} ` + (teammate.worldInfoKey ? ` | WorldInfo: ${teammate.worldInfoKey} ` : '');
     document.getElementById('nexus-profile-modal').style.display = 'block';
 }
 
@@ -1134,11 +1335,11 @@ window.infiniteNexus = {
             const textarea = document.querySelector('#send_textarea');
             if (textarea) {
                 const prefix = textarea.value ? "\n" : "";
-                textarea.value += prefix + `[系统: 玩家花费${cost}点兑换了 <${itemName}>]\n${effectTag}`;
+                textarea.value += prefix + `[系统: 玩家花费${cost} 点兑换了 < ${itemName}>]\n${effectTag} `;
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
             addItem(itemName);
-            toastr.success(`已兑换: ${itemName}`);
+            toastr.success(`已兑换: ${itemName} `);
             renderShopItems();
         } else {
             toastr.error("点数不足");
@@ -1318,7 +1519,7 @@ function generateCommsSummary() {
             summary += `\n【与 ${teammate.name} 的传音】\n`;
             recentHistory.forEach(msg => {
                 const sender = msg.role === "user" ? "你" : teammate.name;
-                summary += `${sender}: ${msg.content}\n`;
+                summary += `${sender}: ${msg.content} \n`;
             });
         }
     });
@@ -1326,19 +1527,129 @@ function generateCommsSummary() {
 }
 
 function injectCommsContext() {
-    const summary = generateCommsSummary();
-    if (!summary) return;
     try {
         const context = getContext();
-        if (context.chat && context.chat.length > 0) {
-            const lastUserMsg = [...context.chat].reverse().find(m => m.is_user);
-            if (lastUserMsg && !lastUserMsg.mes.includes("【与 ")) {
-                console.log("[Nexus] 注入传音记录到上下文");
-            }
+        if (!context.chat || context.chat.length === 0) return;
+
+        // Find last user message
+        let lastUserMsg = null;
+        for (let i = context.chat.length - 1; i >= 0; i--) {
+            if (context.chat[i].is_user) { lastUserMsg = context.chat[i]; break; }
         }
+        if (!lastUserMsg) return;
+
+        let injection = "";
+
+        // 1. Inject Comms
+        const commsSummary = generateCommsSummary();
+        if (commsSummary && !lastUserMsg.mes.includes("【与 ")) {
+            injection += "\n" + commsSummary;
+            console.log("[Nexus] Injecting Comms History");
+        }
+
+        // 2. Inject Pending Dice
+        if (settings.pendingDice && settings.pendingDice.length > 0) {
+            injection += "\n" + settings.pendingDice.join("\n");
+            console.log("[Nexus] Injecting Dice Result:", settings.pendingDice);
+            settings.pendingDice = []; // Clear after injection
+            saveSettingsDebounced();
+        }
+
+        // Apply Injection
+        if (injection) {
+            lastUserMsg.mes += injection;
+            // Force update UI if visible (optional, usually internal state update is enough for prompt generation)
+            // But we might need to trigger variable update
+        }
+
     } catch (e) { console.warn("[Nexus] Context injection error:", e); }
 }
 
+/* DUPLICATES REMOVED
+// --- Restored Missing Functions ---
+function renderShopItems() {
+    const list = document.getElementById('nexus-shop-list');
+    if (!list) return;
+    list.innerHTML = "";
+    nexusState.shopItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'nexus-shop-item';
+        div.innerHTML = `
+        < div >
+                <div style="font-weight:bold;">${item.name}</div>
+                <div style="font-size:0.8em; color:#666;">${item.desc}</div>
+            </div >
+        <button class="nexus-shop-buy" onclick="infiniteNexus.buyItem('${item.name}', ${item.cost})">${item.cost} Karma</button>
+    `;
+        list.appendChild(div);
+    });
+}
+ 
+function buyItem(name, cost) {
+    if (nexusState.karma < cost) {
+        toastr.warning("Karma 不足！", "Infinite Nexus");
+        return;
+    }
+    nexusState.karma -= cost;
+    addItem(name);
+    updateUI();
+    toastr.success(`购买了 ${ name } `, "Infinite Nexus");
+    renderShopItems();
+}
+ 
+function manualAddSkill() {
+    const name = prompt("请输入技能名称:");
+    if (!name) return;
+    const valStr = prompt("请输入技能数值 (1-100):", "50");
+    const val = parseInt(valStr);
+    if (isNaN(val)) return;
+    addOrUpdateSkill(name, val);
+}
+ 
+function openProfileModal(teammateId) {
+    const teammate = settings.teammates.find(t => t.id === teammateId);
+    if (!teammate) return;
+    document.getElementById('nexus-profile-name').value = teammate.name;
+    document.getElementById('nexus-profile-traits').value = (teammate.traits || []).join(', ');
+    document.getElementById('nexus-profile-backstory').value = teammate.backstory || '';
+    document.getElementById('nexus-profile-notes').value = teammate.notes || '';
+    const inPartyCb = document.getElementById('nexus-profile-inparty');
+    if (inPartyCb) inPartyCb.checked = !!teammate.inParty;
+    const sourceText = teammate.worldInfoKey ? `来源: WorldInfo(${ teammate.worldInfoKey })` : "来源: 手动添加";
+    const sourceEl = document.getElementById('nexus-profile-source');
+    if (sourceEl) sourceEl.innerText = sourceText;
+ 
+    const modal = document.getElementById('nexus-profile-modal');
+    modal.dataset.currentId = teammateId;
+    modal.style.display = 'block';
+}
+ 
+function saveCurrentProfile() {
+    const modal = document.getElementById('nexus-profile-modal');
+    const teammateId = modal.dataset.currentId;
+    if (!teammateId) return;
+    const teammate = settings.teammates.find(t => t.id === teammateId);
+    if (!teammate) return;
+ 
+    teammate.traits = document.getElementById('nexus-profile-traits').value.split(/[,，]/).map(s => s.trim()).filter(s => s);
+    teammate.backstory = document.getElementById('nexus-profile-backstory').value;
+    teammate.notes = document.getElementById('nexus-profile-notes').value;
+    const inPartyCb = document.getElementById('nexus-profile-inparty');
+    if (inPartyCb) teammate.inParty = inPartyCb.checked;
+ 
+    saveSettingsDebounced();
+    toastr.success("档案已保存", "Infinite Nexus");
+    modal.style.display = 'none';
+    if (typeof renderFriendList === 'function') renderFriendList();
+}
+ 
+// Expose to global window object
+if (!window.infiniteNexus) window.infiniteNexus = {};
+window.infiniteNexus.buyItem = buyItem;
+window.infiniteNexus.renderShopItems = renderShopItems;
+window.infiniteNexus.openProfileModal = openProfileModal;
+*/
+console.log("Nexus Cleaned & Loaded");
 jQuery(document).ready(function () {
     const link = document.createElement('link');
     link.href = extensionPath + 'nexus-style.css';
@@ -1351,6 +1662,23 @@ jQuery(document).ready(function () {
     catch (e) { console.warn("[Nexus] 无法注册 USER_MESSAGE_RENDERED 事件:", e); }
 
     try {
+        if (event_types.MESSAGE_RECEIVED) {
+            eventSource.on(event_types.MESSAGE_RECEIVED, (data) => {
+                // Determine text content. 'data' might be message ID or object.
+                // We'll read the DOM or Context. 
+                // Context is updated asynchronously. Better to read the last message from DOM?
+                setTimeout(() => {
+                    const msgs = document.querySelectorAll('.mes_text');
+                    if (msgs.length > 0) {
+                        const lastMsg = msgs[msgs.length - 1];
+                        if (lastMsg) {
+                            analyzeGameEvents(lastMsg.innerText);
+                            triggerProactiveRequests();
+                        }
+                    }
+                }, 1000);
+            });
+        }
         if (event_types.MESSAGE_DELETED) {
             eventSource.on(event_types.MESSAGE_DELETED, () => { console.log("[Nexus] 检测到消息删除，重算状态"); recalculateStateFromChat(); });
         }
