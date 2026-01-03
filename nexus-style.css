@@ -704,3 +704,40 @@
         min-height: 50px;
     }
 }
+
+/* 聊天输入行布局 */
+.nexus-comms-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nexus-comms-input-row .nexus-comms-input {
+    flex: 1;
+}
+
+/* 全局/私聊模式切换按钮 */
+.nexus-mode-toggle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #d4af37;
+    font-size: 18px;
+    line-height: 26px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.nexus-mode-toggle:hover {
+    background: rgba(212, 175, 55, 0.5);
+}
+
+.nexus-mode-toggle.private-mode {
+    background: rgba(100, 100, 150, 0.3);
+    border-color: rgba(150, 150, 200, 0.5);
+    color: #aaa;
+}

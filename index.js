@@ -44,6 +44,116 @@ const BASE_STATE = {
 };
 
 let settings = null;
+let currentChatId = null;
+
+// 获取当前聊天档案 ID
+function getCurrentChatId() {
+    try {
+        const context = getContext();
+        return context.chatId || 'default';
+    } catch (e) {
+        return 'default';
+    }
+}
+
+// 保存当前聊天档案的状态
+function saveCurrentChatState() {
+    if (!settings || !currentChatId) return;
+
+    const chatState = {
+        hp: nexusState.hp,
+        maxHp: nexusState.maxHp,
+        san: nexusState.san,
+        maxSan: nexusState.maxSan,
+        karma: nexusState.karma,
+        time: nexusState.time,
+        mission: nexusState.mission,
+        skills: JSON.parse(JSON.stringify(nexusState.skills)),
+        inventory: JSON.parse(JSON.stringify(nexusState.inventory)),
+        isReset: settings.chatStates?.[currentChatId]?.isReset || false
+    };
+
+    if (!settings.chatStates) settings.chatStates = {};
+    settings.chatStates[currentChatId] = chatState;
+
+    // 如果不是重置档案，同步更新全局状态
+    if (!chatState.isReset) {
+        settings.globalState = {
+            hp: chatState.hp,
+            maxHp: chatState.maxHp,
+            san: chatState.san,
+            maxSan: chatState.maxSan,
+            karma: chatState.karma,
+            time: chatState.time,
+            mission: chatState.mission,
+            skills: JSON.parse(JSON.stringify(chatState.skills)),
+            inventory: JSON.parse(JSON.stringify(chatState.inventory)),
+            teammates: JSON.parse(JSON.stringify(settings.teammates || [])),
+            commsHistory: JSON.parse(JSON.stringify(settings.commsHistory || {}))
+        };
+    }
+
+    saveSettingsDebounced();
+}
+
+// 加载聊天档案的状态
+function loadChatState(chatId) {
+    if (!settings) return;
+
+    const chatState = settings.chatStates?.[chatId];
+
+    if (chatState) {
+        // 已有记录，加载该档案的状态
+        nexusState.hp = chatState.hp ?? BASE_STATE.hp;
+        nexusState.maxHp = chatState.maxHp ?? BASE_STATE.maxHp;
+        nexusState.san = chatState.san ?? BASE_STATE.san;
+        nexusState.maxSan = chatState.maxSan ?? BASE_STATE.maxSan;
+        nexusState.karma = chatState.karma ?? 0;
+        nexusState.time = chatState.time ?? BASE_STATE.time;
+        nexusState.mission = chatState.mission ?? BASE_STATE.mission;
+        nexusState.skills = chatState.skills ? JSON.parse(JSON.stringify(chatState.skills)) : JSON.parse(JSON.stringify(BASE_STATE.skills));
+        nexusState.inventory = chatState.inventory ? JSON.parse(JSON.stringify(chatState.inventory)) : [];
+        console.log(`[Nexus] 加载档案状态: ${chatId}, isReset: ${chatState.isReset}`);
+    } else if (settings.globalState) {
+        // 新档案，继承全局状态
+        nexusState.hp = settings.globalState.hp ?? BASE_STATE.hp;
+        nexusState.maxHp = settings.globalState.maxHp ?? BASE_STATE.maxHp;
+        nexusState.san = settings.globalState.san ?? BASE_STATE.san;
+        nexusState.maxSan = settings.globalState.maxSan ?? BASE_STATE.maxSan;
+        nexusState.karma = settings.globalState.karma ?? 0;
+        nexusState.time = settings.globalState.time ?? BASE_STATE.time;
+        nexusState.mission = settings.globalState.mission ?? BASE_STATE.mission;
+        nexusState.skills = settings.globalState.skills ? JSON.parse(JSON.stringify(settings.globalState.skills)) : JSON.parse(JSON.stringify(BASE_STATE.skills));
+        nexusState.inventory = settings.globalState.inventory ? JSON.parse(JSON.stringify(settings.globalState.inventory)) : [];
+        console.log(`[Nexus] 新档案继承全局状态: ${chatId}`);
+    } else {
+        // 完全新开始
+        Object.assign(nexusState, JSON.parse(JSON.stringify(BASE_STATE)));
+        console.log(`[Nexus] 全新开始: ${chatId}`);
+    }
+
+    currentChatId = chatId;
+    updateUI();
+    renderSkills();
+    renderInventory();
+}
+
+// 处理聊天档案切换
+function handleChatChanged() {
+    const newChatId = getCurrentChatId();
+    if (newChatId === currentChatId) return;
+
+    // 保存旧档案状态
+    if (currentChatId) {
+        saveCurrentChatState();
+    }
+
+    // 切换档案时清除待注入的骰子结果
+    settings.pendingDice = [];
+
+    // 加载新档案状态
+    loadChatState(newChatId);
+}
 
 function initSettings() {
     if (!extension_settings[extensionName]) {
@@ -52,7 +162,9 @@ function initSettings() {
             commsHistory: {},
             pendingRequests: [],
             currentTeammate: null,
-            aiConfig: { endpoint: '', apiKey: '', model: 'gpt-3.5-turbo' }
+            aiConfig: { endpoint: '', apiKey: '', model: 'gpt-3.5-turbo' },
+            globalState: null,
+            chatStates: {}
         };
     }
     if (!extension_settings[extensionName].pendingRequests) {
@@ -63,6 +175,12 @@ function initSettings() {
     }
     if (!extension_settings[extensionName].aiConfig) {
         extension_settings[extensionName].aiConfig = { endpoint: '', apiKey: '', model: 'gpt-3.5-turbo' };
+    }
+    if (!extension_settings[extensionName].chatStates) {
+        extension_settings[extensionName].chatStates = {};
+    }
+    if (!extension_settings[extensionName].globalState) {
+        extension_settings[extensionName].globalState = null;
     }
     return extension_settings[extensionName];
 }
@@ -112,7 +230,7 @@ function createOverlay() {
             <div class="nexus-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; font-size:0.9em; color:#888;">
                     <span>当前任务</span>
-                    <span id="nexus-switch-dungeon-btn" class="nexus-btn-small" title="切换副本/世界" style="cursor:pointer;">[切换]</span>
+                    <span id="nexus-switch-dungeon-btn" class="nexus-btn-small" title="进入新副本" style="cursor:pointer;">[副本]</span>
                 </div>
                 <div id="nexus-mission" class="nexus-mission-box" style="margin:0;">存活并寻找线索...</div>
             </div>
@@ -128,8 +246,7 @@ function createOverlay() {
             </div>
             <div class="nexus-section" style="display:flex; gap:10px;">
                 <button id="nexus-shop-open" class="nexus-btn-small" style="flex:1;">商店</button>
-                <!-- Reserved for future buttons -->
-                <div style="flex:1;"></div>
+                <button id="nexus-reset-btn" class="nexus-btn-small nexus-btn-danger" style="flex:1;" title="重置所有数据">重置</button>
             </div>
         </div>
     `;
@@ -191,7 +308,10 @@ function createOverlay() {
                 <div id="nexus-comms-log" class="nexus-comms-log">
                     <div class="nexus-comms-placeholder">选择好友开始传音...</div>
                 </div>
-                <input type="text" id="nexus-comms-input" class="nexus-comms-input" placeholder="选择好友后发送传音..." disabled>
+                <div class="nexus-comms-input-row">
+                    <input type="text" id="nexus-comms-input" class="nexus-comms-input" placeholder="选择好友后发送传音..." disabled>
+                    <span id="nexus-comms-mode-toggle" class="nexus-mode-toggle" title="全局模式（消息会同步到剧情）">●</span>
+                </div>
             </div>
         </div>
     `;
@@ -371,6 +491,14 @@ function createOverlay() {
         renderFriendList();
         updateRequestBadge();
         if (settings.currentTeammate) renderCommsLog(settings.currentTeammate);
+
+        // 恢复模式状态
+        const toggle = document.getElementById('nexus-comms-mode-toggle');
+        if (toggle && settings.commsPrivateMode) {
+            toggle.classList.add('private-mode');
+            toggle.innerHTML = '☽';
+            toggle.title = '私聊模式（消息不会同步到剧情）';
+        }
     });
     document.getElementById('nexus-comms-close').addEventListener('click', () => { commsModal.style.display = 'none'; });
     // Header click listener is now inline in HTML for simplicity, or we can add it here if inline is not preferred.
@@ -379,6 +507,22 @@ function createOverlay() {
 
     document.getElementById('nexus-comms-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendCommsMessage();
+    });
+
+    // 全局/私聊模式切换
+    document.getElementById('nexus-comms-mode-toggle').addEventListener('click', () => {
+        const toggle = document.getElementById('nexus-comms-mode-toggle');
+        const isPrivate = toggle.classList.toggle('private-mode');
+        if (isPrivate) {
+            toggle.innerHTML = '☽'; // 月牙 = 私聊
+            toggle.title = '私聊模式（消息不会同步到剧情）';
+        } else {
+            toggle.innerHTML = '●'; // 圆球 = 全局
+            toggle.title = '全局模式（消息会同步到剧情）';
+        }
+        // 保存模式状态
+        settings.commsPrivateMode = isPrivate;
+        saveSettingsDebounced();
     });
 
     document.getElementById('nexus-add-friend-btn').addEventListener('click', () => {
@@ -496,10 +640,39 @@ function createOverlay() {
         }
     });
 
+    // 重置按钮 - 将当前档案标记为平行世界
+    document.getElementById('nexus-reset-btn').addEventListener('click', () => {
+        const choice = confirm("选择重置类型：\n\n【确定】= 平行世界模式\n（当前档案独立，不影响其他档案的全局数据）\n\n【取消】= 取消操作");
+        if (!choice) return;
+
+        if (!confirm("⚠️ 确定开启平行世界模式吗？\n\n这将：\n- 清空当前档案的所有状态\n- 此档案的数据不再影响全局\n- 切换到其他档案时会恢复全局数据\n\n此操作不可撤销！")) return;
+
+        // 标记当前档案为 isReset
+        if (!settings.chatStates) settings.chatStates = {};
+        if (!settings.chatStates[currentChatId]) settings.chatStates[currentChatId] = {};
+        settings.chatStates[currentChatId].isReset = true;
+
+        // 清空当前状态
+        Object.assign(nexusState, JSON.parse(JSON.stringify(BASE_STATE)));
+
+        // 保存
+        saveCurrentChatState();
+
+        toastr.success("已开启平行世界模式，数据已重置", "Infinite Nexus");
+        updateUI();
+        renderSkills();
+        renderInventory();
+    });
+
     makeDraggable(overlay, document.getElementById('nexus-header-bar'));
     renderSkills();
     renderInventory();
     settings = initSettings();
+
+    // 初始化时加载当前聊天档案的状态
+    currentChatId = getCurrentChatId();
+    loadChatState(currentChatId);
+
     loadTeammatesFromWorldInfo();
     if (window.innerWidth < 600) toggleMinimize();
 
@@ -726,15 +899,19 @@ function sendCommsMessage() {
     const teammate = settings.teammates.find(t => t.id === teammateId);
     if (!teammate) return;
 
+    // 检查当前是否为全局模式
+    const modeToggle = document.getElementById('nexus-comms-mode-toggle');
+    const isPublic = modeToggle && !modeToggle.classList.contains('private-mode');
+
     const log = document.getElementById('nexus-comms-log');
     const userEntry = document.createElement('div');
     userEntry.style.marginBottom = "5px";
-    userEntry.innerHTML = `<span class="nexus-msg-user">你:</span> ${msg}`;
+    userEntry.innerHTML = `<span class="nexus-msg-user">你:</span> ${msg}${isPublic ? '' : ' <span style="color:#666;font-size:0.8em;">(私)</span>'}`;
     log.appendChild(userEntry);
     log.scrollTop = log.scrollHeight;
 
     if (!settings.commsHistory[teammateId]) settings.commsHistory[teammateId] = [];
-    settings.commsHistory[teammateId].push({ role: "user", content: msg });
+    settings.commsHistory[teammateId].push({ role: "user", content: msg, isPublic: isPublic, injected: false });
     saveSettingsDebounced();
 
     input.value = "";
@@ -750,10 +927,11 @@ function sendCommsMessage() {
                 if (i > 0) await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
                 const replyEntry = document.createElement('div');
                 replyEntry.style.marginBottom = "5px";
-                replyEntry.innerHTML = `<span style="color:var(--nexus-accent-red); font-weight:bold;">${teammate.name}:</span> ${response}`;
+                replyEntry.innerHTML = `<span style="color:var(--nexus-accent-red); font-weight:bold;">${teammate.name}:</span> ${response}${isPublic ? '' : ' <span style="color:#666;font-size:0.8em;">(私)</span>'}`;
                 log.appendChild(replyEntry);
                 log.scrollTop = log.scrollHeight;
-                settings.commsHistory[teammateId].push({ role: "assistant", content: response });
+                // AI 回复继承用户发送时的模式
+                settings.commsHistory[teammateId].push({ role: "assistant", content: response, isPublic: isPublic, injected: false });
             }
             saveSettingsDebounced();
         }
@@ -986,9 +1164,8 @@ function performSkillCheck(skillName, skillValue, isUniversal = false) {
     else { result = "失败"; color = "#FF9800"; }
     toastr.info(`[${skillName}]  ${roll} / ${skillValue}  <span style="color:${color}; font-weight:bold;">${result}</span>`, "技能检定", { escapeHtml: false });
 
-    // Hidden Injection: Store result to be appended to next message
-    if (!settings.pendingDice) settings.pendingDice = [];
-    settings.pendingDice.push(`[系统检定: ${skillName} ${roll}/${skillValue} ${result}]`);
+    // 只保留最近一次的骰子结果，覆盖之前的
+    settings.pendingDice = [`[系统检定: ${skillName} ${roll}/${skillValue} ${result}]`];
     saveSettingsDebounced();
 }
 
@@ -1634,28 +1811,38 @@ setInterval(() => {
                 msg.dataset.nexusParsedLen = currentText.length;
             }
         }
+        // 定期保存当前档案状态
+        saveCurrentChatState();
     }
 }, 2000);
 
 function generateCommsSummary() {
     if (!settings || !settings.teammates || settings.teammates.length === 0) return "";
     let summary = "";
-    let hasContent = false;
+    let hasNewContent = false;
+
     Object.entries(settings.commsHistory).forEach(([teammateId, history]) => {
         if (!history || history.length === 0) return;
         const teammate = settings.teammates.find(t => t.id === teammateId);
         if (!teammate) return;
-        const recentHistory = history.slice(-3);
-        if (recentHistory.length > 0) {
-            hasContent = true;
+
+        // 只获取 isPublic 且未注入过的消息
+        const publicUninjectedMessages = history.filter(msg => msg.isPublic && !msg.injected);
+        if (publicUninjectedMessages.length > 0) {
+            hasNewContent = true;
             summary += `\n【与 ${teammate.name} 的传音】\n`;
-            recentHistory.forEach(msg => {
+            publicUninjectedMessages.forEach(msg => {
                 const sender = msg.role === "user" ? "你" : teammate.name;
-                summary += `${sender}: ${msg.content} \n`;
+                summary += `${sender}: ${msg.content}\n`;
+                msg.injected = true; // 标记为已注入
             });
         }
     });
-    return hasContent ? summary : "";
+
+    if (hasNewContent) {
+        saveSettingsDebounced(); // 保存注入标记
+    }
+    return hasNewContent ? summary : "";
 }
 
 function injectCommsContext() {
@@ -1818,7 +2005,13 @@ jQuery(document).ready(function () {
             eventSource.on(event_types.MESSAGE_EDITED, () => { console.log("[Nexus] 检测到消息编辑，重算状态"); recalculateStateFromChat(); });
         }
         if (event_types.CHAT_CHANGED) {
-            eventSource.on(event_types.CHAT_CHANGED, () => { console.log("[Nexus] 检测到聊天切换，重算状态"); setTimeout(recalculateStateFromChat, 500); });
+            eventSource.on(event_types.CHAT_CHANGED, () => {
+                console.log("[Nexus] 检测到聊天切换");
+                setTimeout(() => {
+                    handleChatChanged();
+                    recalculateStateFromChat();
+                }, 500);
+            });
         }
         if (event_types.MESSAGE_SWIPED) {
             eventSource.on(event_types.MESSAGE_SWIPED, () => { console.log("[Nexus] 检测到消息滑动切换，重算状态"); recalculateStateFromChat(); });
