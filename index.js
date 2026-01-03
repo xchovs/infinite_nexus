@@ -348,18 +348,22 @@ function createOverlay() {
     document.getElementById('nexus-comms-open').addEventListener('click', (e) => {
         e.stopPropagation(); // 防止事件冒泡到 overlay
 
-        // 自动收起主界面并保持位置
+        // 自动收起主界面 - 使用右侧锚定
         const overlay = document.getElementById('infinite-nexus-overlay');
         if (overlay && !overlay.classList.contains('minimized')) {
-            // 先保存当前位置
             const rect = overlay.getBoundingClientRect();
-            if (!overlay.style.left || overlay.style.left === 'auto') {
-                overlay.style.left = rect.left + 'px';
-                overlay.style.top = rect.top + 'px';
-                overlay.style.right = 'auto';
-            }
+            const currentRight = rect.right;
+
             overlay.classList.add('minimized');
             nexusState.isMinimized = true;
+
+            // 右侧锚定：计算收起后的 left 位置，保持右边缘固定
+            const targetWidth = 44; // minimized 宽度
+            const newLeft = currentRight - targetWidth;
+            overlay.style.left = newLeft + 'px';
+            overlay.style.top = rect.top + 'px';
+            overlay.style.right = 'auto';
+
             saveSettingsDebounced();
         }
 
@@ -580,6 +584,15 @@ function makeDraggable(element, handle) {
     handle.addEventListener('click', (e) => {
         if (e.target.classList.contains('nexus-toggle-btn')) return;
         if (!hasMoved) toggleMinimize();
+    });
+
+    // 触摸头部栏收起 - 移动端
+    handle.addEventListener('touchend', (e) => {
+        if (e.target.classList.contains('nexus-toggle-btn')) return;
+        if (!hasMoved && !element.classList.contains('minimized')) {
+            e.preventDefault();
+            toggleMinimize();
+        }
     });
 
     // Click on minimized ball to expand (for mouse)
