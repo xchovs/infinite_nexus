@@ -453,6 +453,55 @@
     letter-spacing: 1px;
 }
 
+/* Dungeon Options */
+.nexus-dungeon-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.nexus-dungeon-option {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    min-width: 120px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nexus-dungeon-option:hover {
+    border-color: var(--nexus-gold);
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.nexus-dungeon-option.nexus-dungeon-pink:hover {
+    border-color: #ff69b4;
+}
+
+.nexus-dungeon-title {
+    color: var(--nexus-gold);
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+}
+
+.nexus-dungeon-desc {
+    color: var(--nexus-text-sub);
+    font-size: 0.85em;
+}
+
+/* Clear Modal */
+.nexus-clear-header {
+    color: var(--nexus-gold);
+    font-size: 1.3em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
 .nexus-friend-header {
     background: transparent !important;
     color: var(--nexus-text-main) !important;
@@ -599,11 +648,19 @@
 
 /* Mobile Responsive */
 @media (max-width: 600px) {
-    #nexus-comms-modal {
-        width: 95%;
+
+    #nexus-comms-modal,
+    #nexus-new-dungeon-modal,
+    #nexus-clear-modal,
+    #nexus-shop-modal,
+    #nexus-config-modal,
+    #nexus-request-modal,
+    #nexus-profile-modal {
+        width: 92%;
         max-width: none;
-        left: 2.5%;
+        left: 4%;
         transform: none;
+        padding: 15px;
     }
 
     .nexus-comms-header {
@@ -613,5 +670,37 @@
     .nexus-btn-small {
         padding: 3px 8px;
         font-size: 0.8em;
+    }
+
+    /* 副本选择框选项 - 竖向排列 */
+    .nexus-dungeon-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .nexus-dungeon-option {
+        width: 100%;
+        padding: 15px;
+        box-sizing: border-box;
+    }
+
+    .nexus-dungeon-title {
+        font-size: 1.1em;
+    }
+
+    .nexus-dungeon-desc {
+        font-size: 0.85em;
+    }
+
+    /* 通关界面 */
+    .nexus-clear-header {
+        font-size: 1.2em;
+    }
+
+    /* 主界面悬浮球状态 */
+    #infinite-nexus-overlay.minimized {
+        min-width: 50px;
+        min-height: 50px;
     }
 }

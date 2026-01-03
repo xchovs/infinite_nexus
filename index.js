@@ -348,9 +348,16 @@ function createOverlay() {
     document.getElementById('nexus-comms-open').addEventListener('click', (e) => {
         e.stopPropagation(); // 防止事件冒泡到 overlay
 
-        // 自动收起主界面
+        // 自动收起主界面并保持位置
         const overlay = document.getElementById('infinite-nexus-overlay');
         if (overlay && !overlay.classList.contains('minimized')) {
+            // 先保存当前位置
+            const rect = overlay.getBoundingClientRect();
+            if (!overlay.style.left || overlay.style.left === 'auto') {
+                overlay.style.left = rect.left + 'px';
+                overlay.style.top = rect.top + 'px';
+                overlay.style.right = 'auto';
+            }
             overlay.classList.add('minimized');
             nexusState.isMinimized = true;
             saveSettingsDebounced();
@@ -556,11 +563,16 @@ function makeDraggable(element, handle) {
     }, { passive: true });
 
     document.addEventListener('touchend', () => {
-        const wasMinimized = element.classList.contains('minimized');
-        const wasDragging = isDragging;
         isDragging = false;
-        // 触摸结束时，如果是 minimized 且没有移动，则展开
-        if (wasMinimized && !hasMoved) {
+    });
+
+    // 触摸悬浮球展开 - 只在元素上触发，不在 document 上
+    element.addEventListener('touchend', (e) => {
+        if (!element.classList.contains('minimized')) return;
+        // 确保触摸点在元素内
+        if (!hasMoved) {
+            e.preventDefault();
+            e.stopPropagation();
             toggleMinimize();
         }
     });
@@ -1081,17 +1093,17 @@ function startNewDungeon(type) {
     const textarea = document.querySelector('#send_textarea');
 
     const normalPrompt = `[Infinite Nexus 副本开始]
-你和{{char}}突然被一股神秘力量拉入了"无限流"副本世界。
+{{user}}和角色突然被一股神秘力量拉入了"无限流"副本世界。
 
 【角色设定】请随机决定：
-- {{char}}是第一次被拉入副本的"新人"（惊慌、不解），还是已经历过多次副本的"老人"（冷静、有经验）
+- 角色是第一次被拉入副本的"新人"（惊慌、不解），还是已经历过多次副本的"老人"（冷静、有经验）
 - {{user}}同理，也随机决定是新人还是老人
 - 两人可以是一起被传送，或在副本中偶遇
 
 【开场描写要求】
 1. 描述被传送的瞬间感受（白光/眩晕/意识模糊）
 2. 描述副本环境：危险程度、氛围、规则提示
-3. 描写{{char}}和{{user}}的初次反应，体现他们是新人还是老人
+3. 描写角色和{{user}}的初次反应，体现他们是新人还是老人
 4. 给出初始任务提示
 
 【末尾输出系统标签】
@@ -1106,17 +1118,17 @@ function startNewDungeon(type) {
 请开始描述副本开场：`;
 
     const pinkPrompt = `[Infinite Nexus 粉红团副本]
-你和{{char}}突然被一股暧昧的力量拉入了"无限流"的特殊副本——粉红团。
+{{user}}和角色突然被一股暧昧的力量拉入了"无限流"的特殊副本——粉红团。
 
 【角色设定】请随机决定：
-- {{char}}是第一次经历这种副本的"纯情新人"，还是见多识广的"老司机"
+- 角色是第一次经历这种副本的"纯情新人"，还是见多识广的"老司机"
 - {{user}}同理，随机决定经验程度
 - 两人的相遇可以是意外，也可以是命运安排
 
 【开场描写要求】
 1. 描述被传送的瞬间感受（身体发热、意识朦胧）
 2. 描述副本环境：暧昧氛围、诱惑元素、危险与情欲交织
-3. 描写{{char}}的反应，体现其性格和经验程度
+3. 描写角色的反应，体现其性格和经验程度
 4. 给出带有暗示性的任务提示
 
 【末尾输出系统标签】
@@ -1173,6 +1185,12 @@ function manualAddItem() {
 }
 
 function addItem(itemName, count = 1, consumable = false) {
+    // 过滤无效物品名
+    if (!itemName || itemName.trim() === '' || itemName.trim() === '无' || itemName.trim() === 'null' || itemName.trim() === 'none') {
+        return; // 忽略无效物品
+    }
+    itemName = itemName.trim();
+
     if (nexusState.inventory.length > 0 && typeof nexusState.inventory[0] === 'string') {
         nexusState.inventory = nexusState.inventory.map(name => ({ name, count: 1, consumable: false }));
     }
